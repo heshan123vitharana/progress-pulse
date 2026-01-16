@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Progress Pulse ER Diagram - Updated</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            er: {
+                useMaxWidth: false
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .mermaid {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align: center;">Progress Pulse V2 - Entity Relationship Diagram</h1>
+    <p style="text-align: center; font-family: monospace; color: #666; margin-bottom: 5px;">
+        <strong>Updated Schema - January 2026</strong>
+    </p>
+    <p style="text-align: center; font-family: monospace; color: #666; margin-bottom: 20px;">
+        <strong>Notation Key:</strong> &nbsp; <code>||--||</code> One-to-One &nbsp; &bull; &nbsp; <code>||--o{</code>
+        One-to-Many (Zero or More)
+    </p>
+    <div class="mermaid">
+        erDiagram
+        USERS {
+        bigint id PK
+        int employee_id FK
+        int customer_id FK
+        string name
+        string email
+        timestamp email_verified_at
+        string password
+        text avatar
+        string remember_token
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        EMPLOYEES {
+        bigint employee_id PK
+        string first_name
+        string last_name
+        string email
+        string office_phone
+        string private_phone
+        int department_id FK
+        int designation_id FK
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        DEPARTMENTS {
+        bigint department_id PK
+        string department
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        DESIGNATIONS {
+        bigint designation_id PK
+        string designation
+        enum status "active, inactive"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        CUSTOMERS {
+        bigint customer_id PK
+        string customer_code
+        string customer_name
+        string email
+        string mobile_phone
+        string address
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        PROJECTS {
+        bigint project_id PK
+        string project_name
+        bigint customer_id FK
+        date start_date
+        date end_date
+        enum status "planned, active, on_hold, completed, cancelled"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        MODULES {
+        bigint id PK
+        bigint project_id FK
+        string module_name
+        text description
+        enum status "draft, active, completed, archived"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        OBJECTS {
+        bigint id PK
+        bigint module_id FK
+        string object_name
+        text description
+        enum status "draft, active, completed, archived"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        SUB_OBJECTS {
+        bigint id PK
+        bigint object_id FK
+        string sub_object_name
+        text description
+        enum status "draft, active, completed, archived"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        TASKS {
+        bigint task_id PK
+        bigint project_id FK
+        string task_name
+        enum task_type "self_assign, assign_to_others, public"
+        text description
+        int log_user_id
+        int task_priority
+        bigint module_id FK
+        bigint object_id FK
+        bigint sub_object_id FK
+        bigint department_id FK
+        date due_date
+        time due_time
+        timestamp task_started_time
+        bigint assigned_to FK
+        bigint assigned_by FK
+        bigint accepted_by FK
+        timestamp accepted_at
+        bigint created_by FK
+        bigint updated_by FK
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        TASK_ACTIVITY {
+        bigint activity_id PK
+        string activity_name
+        text description
+        int display_order
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        TASK_STATUS {
+        bigint id PK
+        bigint task_id FK
+        bigint activity_id FK
+        bigint assigned_to FK
+        bigint assigned_by FK
+        bigint accepted_by FK
+        timestamp accepted_at
+        bigint qa_by FK
+        timestamp status_changed_at
+        text notes
+        boolean is_current
+        }
+
+        ATTACHMENTS {
+        bigint attachment_id PK
+        int task_id FK
+        string file_name
+        string file_path
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        TIME_ENTRIES {
+        bigint id PK
+        bigint user_id FK
+        bigint task_id FK
+        bigint project_id FK
+        text description
+        datetime start_time
+        datetime end_time
+        int duration
+        boolean is_billable
+        decimal hourly_rate
+        enum status "running, stopped, approved, rejected"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        CUSTOMER_FEEDBACK {
+        bigint feedback_id PK
+        int task_id FK
+        int customer_id FK
+        int user_id FK
+        int rating
+        text message
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        TASK_COMMENT_THREADS {
+        bigint id PK
+        int task_id FK
+        int user_id FK
+        string user_name
+        string user_type
+        string text
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        ROLES {
+        bigint id PK
+        string name
+        string slug
+        enum status "active, inactive"
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        PERMISSIONS {
+        bigint id PK
+        string name
+        string slug
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        NOTIFICATIONS {
+        uuid id PK
+        string type
+        string notifiable_type
+        bigint notifiable_id
+        text data
+        timestamp read_at
+        timestamp created_at
+        timestamp updated_at
+        }
+
+        ROLES_PERMISSIONS {
+        bigint role_id PK, FK
+        bigint permission_id PK, FK
+        }
+
+        USERS_ROLES {
+        bigint user_id PK, FK
+        bigint role_id PK, FK
+        }
+
+        USERS_PERMISSIONS {
+        bigint user_id PK, FK
+        bigint permission_id PK, FK
+        }
+
+        %% Core Relationships
+        USERS ||--|| EMPLOYEES : "links to"
+        USERS ||--|| CUSTOMERS : "links to"
+
+        DEPARTMENTS ||--o{ EMPLOYEES : "has"
+        DESIGNATIONS ||--o{ EMPLOYEES : "assigned to"
+
+        CUSTOMERS ||--o{ PROJECTS : "sponsors"
+
+        %% Hierarchical Structure
+        PROJECTS ||--o{ MODULES : "contains"
+        MODULES ||--o{ OBJECTS : "contains"
+        OBJECTS ||--o{ SUB_OBJECTS : "contains"
+
+        %% Task Relationships
+        PROJECTS ||--o{ TASKS : "contains"
+        MODULES ||--o{ TASKS : "categorizes"
+        OBJECTS ||--o{ TASKS : "categorizes"
+        SUB_OBJECTS ||--o{ TASKS : "categorizes"
+        DEPARTMENTS ||--o{ TASKS : "assigned to"
+
+        %% Task Assignment & Status
+        USERS ||--o{ TASKS : "created by"
+        USERS ||--o{ TASKS : "assigned to"
+        USERS ||--o{ TASKS : "assigned by"
+        USERS ||--o{ TASKS : "accepted by"
+
+        TASKS ||--o{ TASK_STATUS : "has status history"
+        TASK_ACTIVITY ||--o{ TASK_STATUS : "defines activity"
+        USERS ||--o{ TASK_STATUS : "status assigned to"
+
+        %% Task Related
+        TASKS ||--o{ ATTACHMENTS : "has"
+        TASKS ||--o{ TIME_ENTRIES : "tracked in"
+        TASKS ||--o{ CUSTOMER_FEEDBACK : "receives"
+        TASKS ||--o{ TASK_COMMENT_THREADS : "has comments"
+
+        %% Time & Feedback
+        USERS ||--o{ TIME_ENTRIES : "logs"
+        PROJECTS ||--o{ TIME_ENTRIES : "tracked for"
+
+        CUSTOMERS ||--o{ CUSTOMER_FEEDBACK : "provides"
+        USERS ||--o{ CUSTOMER_FEEDBACK : "submitted by"
+
+        USERS ||--o{ TASK_COMMENT_THREADS : "comments"
+
+        %% RBAC - Many-to-Many via Bridge Tables
+        USERS ||--o{ USERS_ROLES : "has"
+        ROLES ||--o{ USERS_ROLES : "assigned to"
+
+        ROLES ||--o{ ROLES_PERMISSIONS : "has"
+        PERMISSIONS ||--o{ ROLES_PERMISSIONS : "belongs to"
+
+        USERS ||--o{ USERS_PERMISSIONS : "has direct"
+        PERMISSIONS ||--o{ USERS_PERMISSIONS : "assigned to"
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DBML Preview - Progress Pulse V2</title>
+  <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 1rem; }
+    header { display:flex; align-items:center; gap:1rem; margin-bottom: 1rem; }
+    pre { background:#f6f8fa; padding:1rem; border-radius:6px; overflow:auto; max-height:320px }
+    .container { display:flex; gap:1rem }
+    .left { flex:1 1 40%; min-width:320px }
+    .right { flex:1 1 60%; min-width:420px }
+    .mermaid { background:#fff; padding:1rem; border-radius:6px; overflow:auto; }
+    footer { margin-top:1rem; color:#666 }
+    button { background:#0366d6; color:#fff; border:0; padding:.5rem .75rem; border-radius:6px; cursor:pointer }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>DBML Preview — Progress Pulse V2</h2>
+    <div style="margin-left:auto">
+      <button id="refresh">Refresh Preview</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="left">
+      <h3>DBML Source</h3>
+      <pre id="dbml">Project ProgressPulseV2 {
+  database_type: 'MySQL'
+  Note: 'Database schema for Progress Pulse V2'
+}
+
+Table users {
+  id bigint [pk, increment]
+  employee_id int [ref: - employees.employee_id]
+  customer_id int [ref: - customers.customer_id]
+  name string
+  email string [unique]
+  password string
+  avatar text
+  remember_token string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table employees {
+  employee_id bigint [pk, increment]
+  first_name string
+  last_name string
+  email string
+  office_phone string
+  private_phone string
+  department_id int [ref: > departments.department_id]
+  designation_id int [ref: > designations.designation_id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table departments {
+  department_id bigint [pk, increment]
+  department string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table designations {
+  designation_id bigint [pk, increment]
+  designation string
+  status int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table projects {
+  project_id bigint [pk, increment]
+  project_name string
+  client_name string
+  client_email string
+  start_date string
+  end_date string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table tasks {
+  task_id bigint [pk, increment]
+  project_id string [ref: > projects.project_id]
+  task_name string
+  description string
+  task_type string
+  log_user_id int [ref: > employees.employee_id]
+  task_priority int
+  attachment_id int [ref: > attachments.attachment_id]
+  due_date string
+  due_time string
+  task_started_time string
+  reason string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table taskassignments {
+  assignment_id bigint [pk, increment]
+  task_id int [ref: > tasks.task_id]
+  create_employee_id int [ref: > employees.employee_id]
+  assigned_employee_id int [ref: > employees.employee_id]
+  qa_by int
+  accepted_datetime date
+  inprogress_datetime date
+  inqa_datetime date
+  inrepeating_datetime date
+  started_datetime date
+  completed_datetime date
+  status int
+  active_task boolean [default: 0]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table attachments {
+  attachment_id bigint [pk, increment]
+  task_id int [ref: > tasks.task_id]
+  file_name string
+  file_path string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table customers {
+  customer_id bigint [pk, increment]
+  customer_code string
+  customer_name string
+  email string
+  mobile_phone string
+  address string
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table customer_feedback {
+  feedback_id bigint [pk, increment]
+  task_id int [ref: > tasks.task_id]
+  rating int
+  message string
+  customer_id int [ref: > customers.customer_id]
+  user_id int [ref: > users.id]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table time_entries {
+  id bigint [pk, increment]
+  user_id bigint [ref: > users.id]
+  task_id bigint [ref: > tasks.task_id]
+  project_id bigint [ref: > projects.project_id]
+  description text
+  start_time dateTime
+  end_time dateTime
+  duration int
+  is_billable boolean
+  hourly_rate decimal(10,2)
+  status enum
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table task_comment_threads {
+  id bigint [pk, increment]
+  task_id int [ref: > tasks.task_id]
+  user_id int [ref: > users.id]
+  user_name string
+  user_type string
+  text string
+  created_at timestamp
+  updated_at timestamp
+}</pre>
+    </div>
+
+    <div class="right">
+      <h3>ER Diagram (Mermaid)</h3>
+      <div id="diagram" class="mermaid">loading diagram...</div>
+    </div>
+  </div>
+
+  <footer>
+    <small>Generated locally. Use the <code>Refresh Preview</code> button after editing the DBML source above.</small>
+  </footer>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+    function parseDbmlToMermaid(dbml) {
+      const tables = {};
+      const relations = [];
+      const tableRegex = /Table\s+([\w_]+)\s*{([^}]*)}/gms;
+      let m;
+      while ((m = tableRegex.exec(dbml)) !== null) {
+        const name = m[1];
+        const body = m[2];
+        const lines = body.split(/\n/).map(l => l.trim()).filter(l => l && !l.startsWith('//'));
+        const fields = [];
+        for (const line of lines) {
+          // Match: name type [attrs]
+          const match = line.match(/^([\w_]+)\s+([^\[]+)(\[.*\])?$/);
+          if (!match) continue;
+          const fname = match[1];
+          const ftype = match[2].trim();
+          const attrs = match[3] || '';
+          fields.push({ name: fname, type: ftype, attrs });
+          const refMatch = attrs.match(/ref:\s*([<>-]+)?\s*([\w_]+)\.([\w_]+)/);
+          if (refMatch) {
+            relations.push({ from: name, to: refMatch[2], field: fname });
+          }
+        }
+        tables[name] = fields;
+      }
+
+      let md = 'erDiagram\n';
+      for (const t of Object.keys(tables)) {
+        md += `  ${t} {\n`;
+        for (const f of tables[t]) {
+          // Shorten types for display
+          md += `    ${f.type.replace(/\s+/g,' ')} ${f.name}\n`;
+        }
+        md += '  }\n';
+      }
+      // Deduplicate relations
+      const seen = new Set();
+      for (const r of relations) {
+        const key = `${r.from}-->${r.to}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          md += `  ${r.from} ||--o{ ${r.to} : "${r.field}"\n`;
+        }
+      }
+      return md;
+    }
+
+    function render() {
+      const dbml = document.getElementById('dbml').textContent;
+      const mermaidCode = parseDbmlToMermaid(dbml);
+      const diagramEl = document.getElementById('diagram');
+      diagramEl.textContent = mermaidCode;
+      // render
+      try {
+        mermaid.parse(mermaidCode); // validate
+        mermaid.init(undefined, diagramEl);
+      } catch (err) {
+        diagramEl.textContent = 'Error rendering diagram: ' + err.message + '\n\n' + mermaidCode;
+        console.error(err);
+      }
+    }
+
+    document.getElementById('refresh').addEventListener('click', () => render());
+    // initial render
+    render();
+  </script>
+</body>
+</html>
