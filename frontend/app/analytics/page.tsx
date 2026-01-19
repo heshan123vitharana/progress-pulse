@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
 
     // Resource Utilization
     const resourceData = employees.slice(0, 5).map(emp => ({
-        name: emp.name.split(' ')[0],
+        name: emp.first_name || 'Employee',
         hours: Math.floor(Math.random() * 40) + 10, // Mock data
         capacity: 40,
     }));

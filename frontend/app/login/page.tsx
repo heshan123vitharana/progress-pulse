@@ -85,9 +85,9 @@ export default function LoginPage() {
                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-3xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
 
                         {/* Main card */}
-                        <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/60">
+                        <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 border border-white/60">
                             {/* Icon badge */}
-                            <div className="flex justify-center mb-5">
+                            <div className="flex justify-center mb-4">
                                 <div className="relative group">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
                                     <div className="relative w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-all duration-300">
@@ -97,7 +97,7 @@ export default function LoginPage() {
                             </div>
 
                             {/* Header */}
-                            <div className="text-center mb-6">
+                            <div className="text-center mb-4">
                                 <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
                                     Welcome Back
                                 </h1>
@@ -119,7 +119,7 @@ export default function LoginPage() {
                             )}
 
                             {/* Form */}
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-3">
                                 {/* Email input */}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -137,7 +137,7 @@ export default function LoginPage() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
                                             placeholder="Enter your email"
-                                            className="input-focus w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none text-gray-800 placeholder-gray-400 bg-white/50 focus:border-blue-500 focus:bg-white transition-all shadow-sm focus:shadow-md font-medium text-sm"
+                                            className="input-focus w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none text-gray-800 placeholder-gray-400 bg-white/50 focus:border-blue-500 focus:bg-white transition-all shadow-sm focus:shadow-md font-medium text-sm"
                                         />
                                     </div>
                                 </div>
@@ -159,7 +159,7 @@ export default function LoginPage() {
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
                                             placeholder="Enter your password"
-                                            className="input-focus w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl outline-none text-gray-800 placeholder-gray-400 bg-white/50 focus:border-blue-500 focus:bg-white transition-all shadow-sm focus:shadow-md font-medium text-sm"
+                                            className="input-focus w-full pl-12 pr-12 py-2.5 border-2 border-gray-200 rounded-xl outline-none text-gray-800 placeholder-gray-400 bg-white/50 focus:border-blue-500 focus:bg-white transition-all shadow-sm focus:shadow-md font-medium text-sm"
                                         />
                                         <button
                                             type="button"
@@ -201,7 +201,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="btn-primary relative w-full group overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-700 hover:via-blue-600 hover:to-cyan-600 text-white font-bold py-3.5 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5"
+                                    className="btn-primary relative w-full group overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-700 hover:via-blue-600 hover:to-cyan-600 text-white font-bold py-3 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5"
                                 >
                                     {/* Button shine effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -226,7 +226,7 @@ export default function LoginPage() {
                             </form>
 
                             {/* Footer */}
-                            <div className="mt-6 pt-5 border-t border-gray-200">
+                            <div className="mt-4 pt-4 border-t border-gray-200">
                                 <p className="text-center text-xs text-gray-600">
                                     By signing in, you agree to our{' '}
                                     <a href="#" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
