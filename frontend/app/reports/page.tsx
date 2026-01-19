@@ -57,6 +57,8 @@ export default function ReportsPage() {
         await exportReport(reportType, filterParams);
     };
 
+    // Remove debug logs
+
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm">
@@ -127,7 +129,9 @@ export default function ReportsPage() {
                             >
                                 <option value="">All Employees</option>
                                 {employees.map(emp => (
-                                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                    <option key={emp.employee_id} value={emp.employee_id}>
+                                        {emp.first_name} {emp.last_name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
