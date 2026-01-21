@@ -10,8 +10,13 @@ const roleSchema = z.object({
 
 export async function GET(request: Request) {
     try {
-        const roles = await prisma.roles.findMany({
-            orderBy: { name: 'asc' }
+        const roles = await (prisma.roles.findMany as any)({
+            orderBy: { name: 'asc' },
+            include: {
+                role_permissions: {
+                    include: { permission: true }
+                }
+            }
         });
 
         const formattedRoles = roles.map((r: any) => ({
@@ -20,6 +25,7 @@ export async function GET(request: Request) {
             description: r.description,
             slug: r.slug,
             status: r.status,
+            permissions: r.role_permissions.map((rp: any) => rp.permission.id.toString()),
             created_at: r.created_at,
             updated_at: r.updated_at
         }));
@@ -50,14 +56,24 @@ export async function POST(request: Request) {
             );
         }
 
-        const newRole = await prisma.roles.create({
+        const newRole = await (prisma.roles.create as any)({
             data: {
                 name: validated.name,
                 description: validated.description,
                 slug: validated.name.toLowerCase().replace(/ /g, '-'),
                 status: validated.status || 'active',
                 created_at: new Date(),
-                updated_at: new Date()
+                updated_at: new Date(),
+                role_permissions: {
+                    create: (validated as any).permissions?.map((pId: string) => ({
+                        permission: { connect: { id: BigInt(pId) } }
+                    })) || []
+                }
+            },
+            include: {
+                role_permissions: {
+                    include: { permission: true }
+                }
             }
         });
 

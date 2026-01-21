@@ -69,34 +69,49 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
 
     const fetchModules = async (projectId: string) => {
         try {
+            console.log('Fetching modules for project:', projectId);
             const response = await api.get(`/modules?project_id=${projectId}`);
+            console.log('Modules response:', response.data);
             if (response.data.success) {
-                setModules(response.data.data);
+                setModules(response.data.data || []);
+            } else {
+                setModules([]);
             }
         } catch (error) {
             console.error('Error fetching modules:', error);
+            setModules([]);
         }
     };
 
     const fetchObjects = async (moduleId: string) => {
         try {
+            console.log('Fetching objects for module:', moduleId);
             const response = await api.get(`/objects?module_id=${moduleId}`);
+            console.log('Objects response:', response.data);
             if (response.data.success) {
-                setObjects(response.data.data);
+                setObjects(response.data.data || []);
+            } else {
+                setObjects([]);
             }
         } catch (error) {
             console.error('Error fetching objects:', error);
+            setObjects([]);
         }
     };
 
     const fetchSubObjects = async (objectId: string) => {
         try {
+            console.log('Fetching sub-objects for object:', objectId);
             const response = await api.get(`/sub-objects?object_id=${objectId}`);
+            console.log('Sub-objects response:', response.data);
             if (response.data.success) {
-                setSubObjects(response.data.data);
+                setSubObjects(response.data.data || []);
+            } else {
+                setSubObjects([]);
             }
         } catch (error) {
             console.error('Error fetching sub-objects:', error);
+            setSubObjects([]);
         }
     };
 
@@ -122,10 +137,59 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
         }
     };
 
+    const [attachments, setAttachments] = useState<any[]>([]);
+    const [uploading, setUploading] = useState(false);
+
+    // ... (fetch functions remain same)
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.length) return;
+        setUploading(true);
+
+        const formData = new FormData();
+        Array.from(e.target.files).forEach((file) => {
+            formData.append('file', file);
+        });
+
+        // We'll upload one by one for now as the API handles single file
+        // Or modify API to handle multiple. Let's stick to single loop for safety.
+        try {
+            for (let i = 0; i < e.target.files.length; i++) {
+                const file = e.target.files[i];
+                const fData = new FormData();
+                fData.append('file', file);
+
+                const res = await api.post('/upload', fData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                if (res.data.success) {
+                    setAttachments(prev => [...prev, {
+                        path: res.data.data.path,
+                        name: res.data.data.name,
+                        type: res.data.data.type,
+                        size: res.data.data.size
+                    }]);
+                }
+            }
+        } catch (error) {
+            console.error('Upload failed', error);
+            toast.error('Failed to upload file');
+        } finally {
+            setUploading(false);
+            // Reset input
+            e.target.value = '';
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/tasks/create', formData);
+            await api.post('/tasks', { ...formData, attachments });
             toast.success('Task created successfully!');
             if (onSuccess) onSuccess();
         } catch (error: any) {
@@ -347,6 +411,46 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
                 </div>
             </div>
 
+            {/* Attachments Section */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+                <label className="block text-gray-700 font-semibold mb-3">Attachments</label>
+                <div className="space-y-4">
+                    <input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100"
+                    />
+                    {uploading && <div className="text-sm text-blue-600">Uploading...</div>}
+
+                    {attachments.length > 0 && (
+                        <div className="grid grid-cols-1 gap-2">
+                            {attachments.map((file, index) => (
+                                <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
+                                    <div className="flex items-center space-x-2">
+                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                        <span className="text-sm text-gray-700">{file.name}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeAttachment(index)}
+                                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="flex gap-4">
                 <button
                     type="submit"
@@ -364,6 +468,6 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
                     </button>
                 )}
             </div>
-        </form>
+        </form >
     );
 }

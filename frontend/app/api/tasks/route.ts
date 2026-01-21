@@ -15,6 +15,12 @@ const taskSchema = z.object({
     due_date: z.string().optional().nullable(),
     task_type: z.enum(['self_assign', 'assign_to_others', 'public']).optional(),
     task_category: z.string().optional().default('customer'),
+    attachments: z.array(z.object({
+        path: z.string(),
+        name: z.string(),
+        type: z.string(),
+        size: z.number().optional()
+    })).optional().default([])
 });
 
 export async function GET(request: Request) {
@@ -41,7 +47,8 @@ export async function GET(request: Request) {
                 department: true,
                 assigned_user: {
                     select: { id: true, name: true, email: true }
-                }
+                },
+                attachments: true
             },
             orderBy: { created_at: 'desc' },
             take: 100
@@ -99,7 +106,15 @@ export async function POST(request: Request) {
                 task_category: validated.task_category || 'customer',
                 task_code: taskCode,
                 created_at: new Date(),
-                updated_at: new Date()
+                updated_at: new Date(),
+                attachments: {
+                    create: validated.attachments.map(att => ({
+                        file_path: att.path,
+                        file_name: att.name,
+                        file_type: att.type,
+                        file_size: att.size
+                    }))
+                }
             },
         });
 

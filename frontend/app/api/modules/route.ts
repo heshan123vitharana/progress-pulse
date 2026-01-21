@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
         let whereClause = {};
         if (projectId) {
-            whereClause = { project_id: parseInt(projectId) };
+            whereClause = { project_id: BigInt(projectId) };
         }
 
         const modules = await prisma.modules.findMany({

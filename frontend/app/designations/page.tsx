@@ -50,13 +50,13 @@ export default function DesignationsPage() {
                             </thead>
                             <tbody className="divide-y">
                                 {filtered.map(d => (
-                                    <tr key={d.id} className="hover:bg-gray-50">
+                                    <tr key={d.designation_id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 text-sm font-medium">{d.designation_name}</td>
                                         <td className="px-6 py-4 text-sm">{d.description || '-'}</td>
-                                        <td className="px-6 py-4"><StatusBadge status={d.status} /></td>
+                                        <td className="px-6 py-4"><StatusBadge status={d.status as 'active' | 'inactive'} /></td>
                                         <td className="px-6 py-4 text-sm space-x-2">
-                                            <Link href={`/designations/${d.id}/edit`} className="text-blue-600">Edit</Link>
-                                            <button onClick={() => handleDelete(d.id, d.designation_name)} className="text-red-600">Delete</button>
+                                            <Link href={`/designations/${d.designation_id}/edit`} className="text-blue-600">Edit</Link>
+                                            <button onClick={() => handleDelete(d.designation_id, d.designation_name)} className="text-red-600">Delete</button>
                                         </td>
                                     </tr>
                                 ))}

@@ -118,15 +118,14 @@ export default function ProjectFormPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Project Code *
+                                Project Code <span className="text-gray-400 font-normal">(Optional)</span>
                             </label>
                             <input
                                 type="text"
-                                required
                                 value={formData.project_code}
                                 onChange={(e) => setFormData({ ...formData, project_code: e.target.value })}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="PRJ-001"
+                                placeholder="Leave blank to auto-generate (e.g., PROJ-001)"
                             />
                         </div>
 

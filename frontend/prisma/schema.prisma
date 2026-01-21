@@ -27,6 +27,20 @@ model activity_log {
   @@index([subject_type, subject_id], map: "subject")
 }
 
+model task_attachments {
+  attachment_id BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  task_id       BigInt    @db.UnsignedBigInt
+  file_path     String    @db.VarChar(255)
+  file_name     String    @db.VarChar(255)
+  file_type     String?   @db.VarChar(50)
+  file_size     Int?
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+  
+  task          tasks     @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+
+  @@index([task_id], map: "task_attachments_task_id_foreign")
+}
+
 model attachments {
   attachment_id BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   task_id       Int?
@@ -182,6 +196,8 @@ model permissions {
   slug       String    @unique(map: "permissions_slug_unique") @db.VarChar(191)
   created_at DateTime? @db.Timestamp(0)
   updated_at DateTime? @db.Timestamp(0)
+  
+  role_permissions roles_permissions[]
 }
 
 model personal_access_tokens {
@@ -229,11 +245,16 @@ model roles {
   status      roles_status @default(active)
   created_at  DateTime?    @db.Timestamp(0)
   updated_at  DateTime?    @db.Timestamp(0)
+  
+  role_permissions roles_permissions[]
 }
 
 model roles_permissions {
   role_id       BigInt @db.UnsignedBigInt
   permission_id BigInt @db.UnsignedBigInt
+
+  role       roles       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
   @@index([permission_id], map: "roles_permissions_permission_id_foreign")
@@ -373,6 +394,7 @@ model tasks {
   assigned_user users? @relation("AssignedTo", fields: [assigned_to], references: [id])
   created_user users? @relation("CreatedBy", fields: [created_by], references: [id])
   assignments taskassignments[]
+  attachments task_attachments[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments

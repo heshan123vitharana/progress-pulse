@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 const projectSchema = z.object({
     project_name: z.string().min(1).max(255),
+    project_code: z.string().max(50).optional().nullable(),
     client_name: z.string().max(255).optional().nullable(),
     client_email: z.string().email().max(255).optional().nullable(),
     start_date: z.string().optional().nullable(), // Date string
@@ -37,9 +38,28 @@ export async function POST(request: Request) {
         const body = await request.json();
         const validated = projectSchema.parse(body);
 
+        // Auto-generate project code if not provided
+        let finalProjectCode = validated.project_code;
+        if (!finalProjectCode) {
+            const lastProject = await prisma.projects.findFirst({
+                orderBy: { created_at: 'desc' },
+                select: { project_code: true }
+            });
+
+            let nextNum = 1;
+            if (lastProject && lastProject.project_code) {
+                const match = lastProject.project_code.match(/PROJ-(\d+)/);
+                if (match) {
+                    nextNum = parseInt(match[1]) + 1;
+                }
+            }
+            finalProjectCode = `PROJ-${nextNum.toString().padStart(3, '0')}`;
+        }
+
         const newProject = await prisma.projects.create({
             data: {
                 project_name: validated.project_name,
+                project_code: finalProjectCode,
                 // Manual mapping if field names differ or for specific logic
                 customer_id: validated.customer_id ? BigInt(validated.customer_id) : undefined,
                 start_date: validated.start_date ? new Date(validated.start_date) : null,

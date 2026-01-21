@@ -14,8 +14,8 @@ export default function DesignationForm() {
 
     useEffect(() => {
         if (isEdit && params?.id) {
-            const des = designations.find(d => d.id === parseInt(params.id as string));
-            if (des) setFormData({ designation_name: des.designation_name, description: des.description || '', status: des.status });
+            const des = designations.find(d => d.designation_id === parseInt(params.id as string));
+            if (des) setFormData({ designation_name: des.designation_name, description: des.description || '', status: des.status as 'active' | 'inactive' });
         }
     }, [isEdit, params?.id, designations]);
 

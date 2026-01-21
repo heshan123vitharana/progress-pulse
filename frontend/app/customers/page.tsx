@@ -55,7 +55,7 @@ export default function CustomersPage() {
                                         <td className="px-6 py-4 text-sm font-medium">{c.customer_name}</td>
                                         <td className="px-6 py-4 text-sm">{c.company || '-'}</td>
                                         <td className="px-6 py-4 text-sm">{c.email || '-'}</td>
-                                        <td className="px-6 py-4"><StatusBadge status={c.status} /></td>
+                                        <td className="px-6 py-4"><StatusBadge status={c.status as 'active' | 'inactive'} /></td>
                                         <td className="px-6 py-4 text-sm space-x-2">
                                             <Link href={`/customers/${c.customer_id}/edit`} className="text-blue-600">Edit</Link>
                                             <button onClick={() => handleDelete(c.customer_id, c.customer_name)} className="text-red-600">Delete</button>
