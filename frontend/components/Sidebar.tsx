@@ -45,29 +45,52 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             }
         };
         fetchNotificationCount();
-        // Refresh every 30 seconds
         const interval = setInterval(fetchNotificationCount, 30000);
         return () => clearInterval(interval);
     }, []);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileDropdownOpen) {
+                setProfileDropdownOpen(false);
+            }
+        };
+        if (profileDropdownOpen) {
+            setTimeout(() => document.addEventListener('click', handleClickOutside), 100);
+        }
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [profileDropdownOpen]);
+
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
             {/* Mobile sidebar */}
             {sidebarOpen && (
-                <div className="fixed inset-0 z-40 lg:hidden">
-                    <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-                    <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-white">
-                        <div className="flex items-center justify-between h-16 px-4 bg-blue-600">
-                            <span className="text-xl font-bold text-white">Progress Pulse</span>
-                            <button onClick={() => setSidebarOpen(false)} className="text-white">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="fixed inset-0 z-50 lg:hidden">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+                    <div className="fixed inset-y-0 left-0 flex flex-col w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl">
+                        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-700/50">
+                            <div className="flex items-center space-x-3">
+                                <img src="/rbs-logo-new.png" alt="Logo" className="h-9 w-auto" />
+                                <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Progress Pulse</span>
+                            </div>
+                            <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+                        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                             {navigation.map((item) => (
-                                <Link key={item.name} href={item.href} onClick={() => setSidebarOpen(false)} className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg ${pathname === item.href ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}>
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${pathname === item.href
+                                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
+                                            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                                        }`}
+                                >
                                     <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                                     </svg>
@@ -80,77 +103,110 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Desktop sidebar */}
-            <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col shadow-xl">
-                <div className="flex flex-col flex-1 min-h-0 relative border-r">
-                    {/* Background Image & Overlay */}
-                    <div className="absolute inset-0 z-0">
-                        <img
-                            src="/slideshow-1.png"
-                            alt="Background"
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]"></div>
+            <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
+                <div className="flex flex-col flex-1 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl">
+                    {/* Logo Header */}
+                    <div className="flex items-center h-16 px-5 space-x-3 border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full"></div>
+                            <img src="/rbs-logo-new.png" alt="Logo" className="relative h-10 w-auto" />
+                        </div>
+                        <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">Progress Pulse</span>
                     </div>
 
-                    {/* Content */}
-                    <div className="relative z-10 flex flex-col flex-1 h-full">
-                        <div className="flex items-center h-16 px-4 space-x-3 bg-gray-900">
-                            <img src="/rbs-logo-new.png" alt="Logo" className="h-10 w-auto object-contain" />
-                            <span className="text-xl font-bold text-white">Progress Pulse</span>
-                        </div>
-                        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-                            {navigation.map((item) => (
-                                <Link key={item.name} href={item.href} className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition ${pathname === item.href ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}>
-                                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {/* Navigation */}
+                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                        {navigation.map((item) => (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${pathname === item.href
+                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
+                                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                    }`}
+                            >
+                                <div className={`p-1.5 rounded-lg mr-3 transition-all ${pathname === item.href
+                                        ? 'bg-cyan-500/20'
+                                        : 'bg-slate-700/50 group-hover:bg-slate-600/50'
+                                    }`}>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                                     </svg>
-                                    {item.name}
-                                </Link>
-                            ))}
-                        </nav>
-                        <div className="p-4 border-t border-gray-700 bg-gray-900">
-                            <div className="flex items-center">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-white">{user?.name}</p>
-                                    <p className="text-xs text-gray-400">{user?.email}</p>
                                 </div>
-                                <button onClick={() => { logout(); toast.success('Logged out successfully'); }} className="text-gray-400 hover:text-white">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                    </svg>
-                                </button>
+                                {item.name}
+                                {pathname === item.href && (
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+                                )}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    {/* User Footer */}
+                    <div className="p-4 border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
+                        <div className="flex items-center">
+                            <div className="relative">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/25">
+                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
                             </div>
+                            <div className="flex-1 ml-3">
+                                <p className="text-sm font-medium text-white">{user?.name}</p>
+                                <p className="text-xs text-slate-400">{user?.email}</p>
+                            </div>
+                            <button
+                                onClick={() => { logout(); toast.success('Logged out successfully'); }}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                title="Logout"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main content */}
-            <div className="lg:pl-64">
+            <div className="lg:pl-72">
                 {/* Top Header Bar */}
-                <div className="sticky top-0 z-10 flex items-center justify-between h-12 px-4 bg-gray-900 text-white">
+                <div className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 sm:px-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 backdrop-blur-sm border-b border-slate-700/50">
                     {/* Mobile menu button */}
-                    <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white mr-4">
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all mr-3"
+                    >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
 
                     {/* Contact Details */}
-                    <div className="flex items-center text-yellow-400 text-sm">
-                        <span>Contact: +94 71 187 0575 / +94 71 431 0100</span>
+                    <div className="flex items-center space-x-2">
+                        <div className="hidden sm:flex items-center px-3 py-1.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full border border-amber-500/20">
+                            <svg className="w-4 h-4 text-amber-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span className="text-sm font-medium text-amber-400">+94 71 187 0575</span>
+                            <span className="text-slate-500 mx-2">/</span>
+                            <span className="text-sm font-medium text-amber-400">+94 71 431 0100</span>
+                        </div>
                     </div>
 
                     {/* Right side - Notifications & Profile */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
                         {/* Notification Bell */}
-                        <Link href="/notifications" className="relative">
-                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <Link
+                            href="/notifications"
+                            className="relative p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all group"
+                        >
+                            <svg className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                             {notificationCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-yellow-500 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                                    {notificationCount}
+                                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 animate-pulse">
+                                    {notificationCount > 99 ? '99+' : notificationCount}
                                 </span>
                             )}
                         </Link>
@@ -158,64 +214,68 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         {/* User Profile */}
                         <div className="relative">
                             <button
-                                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                                className="flex items-center space-x-2 hover:opacity-80"
+                                onClick={(e) => { e.stopPropagation(); setProfileDropdownOpen(!profileDropdownOpen); }}
+                                className="flex items-center space-x-3 p-1.5 pr-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all"
                             >
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                <div className="relative">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-cyan-500/25">
+                                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-800"></div>
                                 </div>
-                                <span className="text-sm font-medium hidden sm:block">{user?.name || 'Admin'}</span>
+                                <span className="text-sm font-medium text-white hidden sm:block">{user?.name || 'Admin'}</span>
+                                <svg className={`w-4 h-4 text-slate-400 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
 
                             {/* Profile Dropdown */}
                             {profileDropdownOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
-                                    <div className="px-4 py-2 border-b">
-                                        <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                                        <p className="text-xs text-gray-500">{user?.email}</p>
+                                <div className="absolute right-0 mt-2 w-56 bg-slate-800 rounded-xl shadow-2xl shadow-slate-900/50 py-2 z-50 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-slate-700/50 bg-gradient-to-r from-cyan-500/10 to-blue-500/10">
+                                        <p className="text-sm font-semibold text-white">{user?.name}</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">{user?.email}</p>
                                     </div>
-                                    <Link
-                                        href="/settings"
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                        onClick={() => setProfileDropdownOpen(false)}
-                                    >
-                                        <span className="flex items-center">
-                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="py-1">
+                                        <Link
+                                            href="/settings"
+                                            className="flex items-center px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all"
+                                            onClick={() => setProfileDropdownOpen(false)}
+                                        >
+                                            <svg className="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                             Settings
-                                        </span>
-                                    </Link>
-                                    <Link
-                                        href="/profile"
-                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                        onClick={() => setProfileDropdownOpen(false)}
-                                    >
-                                        <span className="flex items-center">
-                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        </Link>
+                                        <Link
+                                            href="/profile"
+                                            className="flex items-center px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all"
+                                            onClick={() => setProfileDropdownOpen(false)}
+                                        >
+                                            <svg className="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                             </svg>
                                             View Profile
-                                        </span>
-                                    </Link>
-                                    <button
-                                        onClick={() => { logout(); toast.success('Logged out'); setProfileDropdownOpen(false); }}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                    >
-                                        <span className="flex items-center">
-                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        </Link>
+                                    </div>
+                                    <div className="border-t border-slate-700/50 pt-1">
+                                        <button
+                                            onClick={() => { logout(); toast.success('Logged out'); setProfileDropdownOpen(false); }}
+                                            className="flex items-center w-full px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all"
+                                        >
+                                            <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                             </svg>
-                                            Logout
-                                        </span>
-                                    </button>
+                                            Sign out
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-                <main>{children}</main>
+                <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
             </div>
         </div>
     );
