@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'react-hot-toast';
+import api from '@/lib/api';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -27,10 +28,27 @@ const navigation = [
 export default function Sidebar({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const [notificationCount, setNotificationCount] = useState(0);
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuthStore();
-    const notificationCount = 2; // This can be dynamic from API
+
+    useEffect(() => {
+        const fetchNotificationCount = async () => {
+            try {
+                const response = await api.get('/notifications/count');
+                if (response.data.success) {
+                    setNotificationCount(response.data.data.unreadCount);
+                }
+            } catch (error) {
+                console.error('Error fetching notification count:', error);
+            }
+        };
+        fetchNotificationCount();
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchNotificationCount, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-100">
