@@ -14,8 +14,8 @@ export default function DepartmentForm() {
 
     useEffect(() => {
         if (isEdit && params?.id) {
-            const dept = departments.find(d => d.id === parseInt(params.id as string));
-            if (dept) setFormData({ department_name: dept.department_name, description: dept.description || '', status: dept.status });
+            const dept = departments.find(d => d.department_id === parseInt(params.id as string));
+            if (dept) setFormData({ department_name: dept.department_name, description: dept.description || '', status: dept.status as 'active' | 'inactive' });
         }
     }, [isEdit, params?.id, departments]);
 
