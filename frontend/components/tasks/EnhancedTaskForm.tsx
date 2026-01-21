@@ -415,34 +415,166 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
             <div className="bg-gray-50 p-4 rounded-lg">
                 <label className="block text-gray-700 font-semibold mb-3">Attachments</label>
                 <div className="space-y-4">
-                    <input
-                        type="file"
-                        multiple
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                        className="block w-full text-sm text-gray-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-full file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-blue-50 file:text-blue-700
-                            hover:file:bg-blue-100"
-                    />
-                    {uploading && <div className="text-sm text-blue-600">Uploading...</div>}
+                    {/* Paste/Drop Zone */}
+                    <div
+                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer
+                            ${uploading ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'}`}
+                        onPaste={async (e) => {
+                            const items = e.clipboardData?.items;
+                            if (!items) return;
 
+                            setUploading(true);
+                            try {
+                                for (let i = 0; i < items.length; i++) {
+                                    const item = items[i];
+                                    if (item.type.indexOf('image') !== -1) {
+                                        const file = item.getAsFile();
+                                        if (file) {
+                                            const fData = new FormData();
+                                            // Generate a unique name for pasted images
+                                            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                                            const newFile = new File([file], `pasted-image-${timestamp}.png`, { type: file.type });
+                                            fData.append('file', newFile);
+
+                                            const res = await api.post('/upload', fData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                            });
+
+                                            if (res.data.success) {
+                                                setAttachments(prev => [...prev, {
+                                                    path: res.data.data.path,
+                                                    name: res.data.data.name,
+                                                    type: res.data.data.type,
+                                                    size: res.data.data.size
+                                                }]);
+                                                toast.success('Image pasted successfully!');
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Paste upload failed', error);
+                                toast.error('Failed to upload pasted image');
+                            } finally {
+                                setUploading(false);
+                            }
+                        }}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+                        }}
+                        onDragLeave={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                        }}
+                        onDrop={async (e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+
+                            const files = e.dataTransfer?.files;
+                            if (!files?.length) return;
+
+                            setUploading(true);
+                            try {
+                                for (let i = 0; i < files.length; i++) {
+                                    const file = files[i];
+                                    const fData = new FormData();
+                                    fData.append('file', file);
+
+                                    const res = await api.post('/upload', fData, {
+                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                    });
+
+                                    if (res.data.success) {
+                                        setAttachments(prev => [...prev, {
+                                            path: res.data.data.path,
+                                            name: res.data.data.name,
+                                            type: res.data.data.type,
+                                            size: res.data.data.size
+                                        }]);
+                                    }
+                                }
+                                toast.success('Files uploaded successfully!');
+                            } catch (error) {
+                                console.error('Drop upload failed', error);
+                                toast.error('Failed to upload files');
+                            } finally {
+                                setUploading(false);
+                            }
+                        }}
+                        tabIndex={0}
+                    >
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-700">
+                                    {uploading ? 'Uploading...' : 'Paste screenshot here (Ctrl+V)'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    or drag & drop files here
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* File Input Button */}
+                    <div className="flex items-center gap-3">
+                        <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            Choose Files
+                            <input
+                                type="file"
+                                multiple
+                                onChange={handleFileUpload}
+                                disabled={uploading}
+                                className="hidden"
+                            />
+                        </label>
+                        <span className="text-sm text-gray-500">
+                            {attachments.length > 0 ? `${attachments.length} file(s) attached` : 'No files chosen'}
+                        </span>
+                    </div>
+
+                    {/* Attached Files List */}
                     {attachments.length > 0 && (
                         <div className="grid grid-cols-1 gap-2">
                             {attachments.map((file, index) => (
-                                <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
-                                    <div className="flex items-center space-x-2">
-                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                        <span className="text-sm text-gray-700">{file.name}</span>
+                                <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                                    <div className="flex items-center space-x-3">
+                                        {file.type?.startsWith('image/') ? (
+                                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden">
+                                                <img src={file.path} alt={file.name} className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-700 block">{file.name}</span>
+                                            {file.size && (
+                                                <span className="text-xs text-gray-500">
+                                                    {(file.size / 1024).toFixed(1)} KB
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => removeAttachment(index)}
-                                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                                     >
-                                        Remove
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
                                     </button>
                                 </div>
                             ))}

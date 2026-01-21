@@ -10,7 +10,6 @@ const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { name: 'Employees', href: '/employees', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { name: 'Tasks', href: '/tasks', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-    { name: 'Kanban', href: '/tasks/kanban', icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2' },
     { name: 'Timesheet', href: '/timesheet', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { name: 'Projects', href: '/projects', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
     { name: 'Modules', href: '/modules', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
@@ -29,6 +28,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
+    const [currentTime, setCurrentTime] = useState(new Date());
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuthStore();
@@ -47,6 +47,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         fetchNotificationCount();
         const interval = setInterval(fetchNotificationCount, 30000);
         return () => clearInterval(interval);
+    }, []);
+
+    // Real-time clock for Sri Lankan time
+    useEffect(() => {
+        const clockInterval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(clockInterval);
     }, []);
 
     // Close dropdown when clicking outside
@@ -68,7 +76,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-                    <div className="fixed inset-y-0 left-0 flex flex-col w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl">
+                    <div className="fixed inset-y-0 left-0 flex flex-col w-72 bg-slate-950 shadow-2xl">
                         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-700/50">
                             <div className="flex items-center space-x-3">
                                 <img src="/rbs-logo-new.png" alt="Logo" className="h-9 w-auto" />
@@ -87,8 +95,8 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                     href={item.href}
                                     onClick={() => setSidebarOpen(false)}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${pathname === item.href
-                                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
-                                            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
+                                        : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
                                         }`}
                                 >
                                     <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,9 +112,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
             {/* Desktop sidebar */}
             <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
-                <div className="flex flex-col flex-1 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl">
+                <div className="flex flex-col flex-1 bg-slate-950 shadow-2xl">
                     {/* Logo Header */}
-                    <div className="flex items-center h-16 px-5 space-x-3 border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
+                    <div className="flex items-center h-16 px-5 space-x-3 border-b border-slate-700/50 bg-slate-950">
                         <div className="relative">
                             <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full"></div>
                             <img src="/rbs-logo-new.png" alt="Logo" className="relative h-10 w-auto" />
@@ -121,13 +129,13 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                 key={item.name}
                                 href={item.href}
                                 className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${pathname === item.href
-                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
-                                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
+                                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
                                     }`}
                             >
                                 <div className={`p-1.5 rounded-lg mr-3 transition-all ${pathname === item.href
-                                        ? 'bg-cyan-500/20'
-                                        : 'bg-slate-700/50 group-hover:bg-slate-600/50'
+                                    ? 'bg-cyan-500/20'
+                                    : 'bg-slate-700/50 group-hover:bg-slate-600/50'
                                     }`}>
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
@@ -140,6 +148,20 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                             </Link>
                         ))}
                     </nav>
+
+                    {/* Support Contact */}
+                    <div className="px-4 py-3 border-t border-slate-700/50">
+                        <div className="flex items-center text-slate-400 text-xs">
+                            <svg className="w-4 h-4 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span className="text-slate-500">Support:</span>
+                        </div>
+                        <div className="mt-1 ml-6 text-xs text-slate-400">
+                            <p>+94 71 187 0575</p>
+                            <p>+94 71 431 0100</p>
+                        </div>
+                    </div>
 
                     {/* User Footer */}
                     <div className="p-4 border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
@@ -182,15 +204,47 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         </svg>
                     </button>
 
-                    {/* Contact Details */}
-                    <div className="flex items-center space-x-2">
-                        <div className="hidden sm:flex items-center px-3 py-1.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full border border-amber-500/20">
-                            <svg className="w-4 h-4 text-amber-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+
+                    {/* Left side - Breadcrumb/Page Title */}
+                    <div className="hidden sm:flex items-center">
+
+                    </div>
+
+                    {/* Center - Real-time Clock */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                            <svg className="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm font-medium text-amber-400">+94 71 187 0575</span>
-                            <span className="text-slate-500 mx-2">/</span>
-                            <span className="text-sm font-medium text-amber-400">+94 71 431 0100</span>
+                            <span
+                                className="text-cyan-400 text-xs font-medium tracking-wider"
+                                style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                                {currentTime.toLocaleTimeString('en-US', {
+                                    timeZone: 'Asia/Colombo',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true
+                                })}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                            <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span
+                                className="text-emerald-400 text-xs font-medium tracking-wide"
+                                style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                                {currentTime.toLocaleDateString('en-US', {
+                                    timeZone: 'Asia/Colombo',
+                                    weekday: 'short',
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                })}
+                            </span>
                         </div>
                     </div>
 

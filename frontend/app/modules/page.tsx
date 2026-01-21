@@ -1,9 +1,7 @@
 'use client';
-// Force re-compile
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import api from '@/lib/api';
 
@@ -116,62 +114,109 @@ export default function ModulesPage() {
         setEditingModule(null);
     };
 
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case 'active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 'completed': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'draft': return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'archived': return 'bg-amber-100 text-amber-700 border-amber-200';
+            default: return 'bg-slate-100 text-slate-700 border-slate-200';
+        }
+    };
+
     if (loading) {
-        return <div className="flex justify-center items-center h-screen">Loading...</div>;
+        return (
+            <Sidebar>
+                <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+                    <div className="flex flex-col items-center space-y-4">
+                        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-slate-500 font-medium">Loading modules...</p>
+                    </div>
+                </div>
+            </Sidebar>
+        );
     }
 
     return (
         <Sidebar>
-            <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Modules</h1>
+            <div className="p-6 lg:p-8">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Modules</h1>
+                            <p className="text-slate-500 text-sm">{modules.length} total modules</p>
+                        </div>
+                    </div>
                     <button
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                        onClick={() => { resetForm(); setShowModal(true); }}
+                        className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all"
                     >
-                        + Add Module
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Module
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {modules.map((module) => (
-                        <div key={module.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div
+                            key={module.id}
+                            className="group bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-slate-200/50 relative overflow-hidden"
+                        >
+                            {/* Decorative gradient */}
+                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl font-semibold text-gray-800">{module.module_name}</h3>
-                                <span className={`px-2 py-1 rounded text-xs ${module.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                <h3 className="text-lg font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">{module.module_name}</h3>
+                                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getStatusStyle(module.status)}`}>
                                     {module.status}
                                 </span>
                             </div>
 
-                            <p className="text-gray-600 mb-2 text-sm">
-                                <strong>Project:</strong> {module.project?.project_name || 'N/A'}
-                            </p>
+                            <div className="flex items-center text-sm text-slate-500 mb-3">
+                                <svg className="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                <span className="font-medium text-slate-600">{module.project?.project_name || 'No Project'}</span>
+                            </div>
 
                             {module.description && (
-                                <p className="text-gray-500 text-sm mb-4">{module.description}</p>
+                                <p className="text-slate-500 text-sm mb-4 line-clamp-2">{module.description}</p>
                             )}
 
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                                 <button
                                     onClick={() => router.push(`/modules/${module.id}/objects`)}
-                                    className="flex-1 bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm"
+                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-xl hover:from-violet-600 hover:to-purple-700 shadow-sm hover:shadow-lg transition-all"
                                 >
-                                    View Objects
+                                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    Objects
                                 </button>
                                 <button
                                     onClick={() => handleEdit(module)}
-                                    className="bg-yellow-500 text-white px-3 py-2 rounded hover:bg-yellow-600 text-sm"
+                                    className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all"
                                 >
-                                    Edit
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
                                 </button>
                                 <button
                                     onClick={() => handleDelete(module.id)}
-                                    className="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm"
+                                    className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
                                 >
-                                    Delete
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -179,25 +224,42 @@ export default function ModulesPage() {
                 </div>
 
                 {modules.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                        No modules found. Create your first module to get started.
+                    <div className="text-center py-16">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                            <svg className="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No modules found</h3>
+                        <p className="text-slate-500 mb-6">Create your first module to get started</p>
+                        <button
+                            onClick={() => { resetForm(); setShowModal(true); }}
+                            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Module
+                        </button>
                     </div>
                 )}
 
                 {/* Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                            <h2 className="text-2xl font-bold mb-4">
-                                {editingModule ? 'Edit Module' : 'Add Module'}
-                            </h2>
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 mb-2">Project</label>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-600">
+                                <h2 className="text-xl font-bold text-white">
+                                    {editingModule ? 'Edit Module' : 'Add New Module'}
+                                </h2>
+                            </div>
+                            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Project</label>
                                     <select
                                         value={formData.project_id}
                                         onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-                                        className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                         required
                                     >
                                         <option value="">Select Project</option>
@@ -209,33 +271,35 @@ export default function ModulesPage() {
                                     </select>
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 mb-2">Module Name</label>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Module Name</label>
                                     <input
                                         type="text"
                                         value={formData.module_name}
                                         onChange={(e) => setFormData({ ...formData, module_name: e.target.value })}
-                                        className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                        placeholder="Enter module name"
                                         required
                                     />
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 mb-2">Description</label>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                                     <textarea
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
                                         rows={3}
+                                        placeholder="Enter description"
                                     />
                                 </div>
 
-                                <div className="mb-4">
-                                    <label className="block text-gray-700 mb-2">Status</label>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+                                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                     >
                                         <option value="active">Active</option>
                                         <option value="draft">Draft</option>
@@ -244,20 +308,17 @@ export default function ModulesPage() {
                                     </select>
                                 </div>
 
-                                <div className="flex gap-2">
+                                <div className="flex gap-3 pt-4">
                                     <button
                                         type="submit"
-                                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                                        className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all"
                                     >
                                         {editingModule ? 'Update' : 'Create'}
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setShowModal(false);
-                                            resetForm();
-                                        }}
-                                        className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                                        onClick={() => { setShowModal(false); resetForm(); }}
+                                        className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-all"
                                     >
                                         Cancel
                                     </button>
