@@ -1,9 +1,8 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useProjects } from '@/hooks/use-projects';
+import { useEmployees } from '@/hooks/use-employees';
 
 export default function ProjectFormPage() {
     const router = useRouter();
@@ -12,6 +11,7 @@ export default function ProjectFormPage() {
     const projectId = params?.id ? parseInt(params.id as string) : null;
 
     const { projects, customers, createProject, updateProject } = useProjects();
+    const { employees } = useEmployees();
 
     const [formData, setFormData] = useState({
         project_code: '',
@@ -21,6 +21,9 @@ export default function ProjectFormPage() {
         start_date: '',
         end_date: '',
         status: 'active',
+        supervised_by_id: '',
+        developers: [] as string[],
+        support_team: [] as string[],
     });
 
     const [loading, setLoading] = useState(false);
@@ -38,10 +41,31 @@ export default function ProjectFormPage() {
                     start_date: project.start_date || '',
                     end_date: project.end_date || '',
                     status: project.status,
+                    supervised_by_id: project.supervised_by_id?.toString() || '',
+                    developers: project.developers?.map(d => (typeof d === 'object' ? d.employee_id.toString() : d.toString())) || [],
+                    support_team: project.support_team?.map(d => (typeof d === 'object' ? d.employee_id.toString() : d.toString())) || [],
                 });
             }
         }
     }, [isEdit, projectId, projects]);
+
+    const handleDeveloperToggle = (employeeId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            developers: prev.developers.includes(employeeId)
+                ? prev.developers.filter(id => id !== employeeId)
+                : [...prev.developers, employeeId]
+        }));
+    };
+
+    const handleSupportToggle = (employeeId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            support_team: prev.support_team.includes(employeeId)
+                ? prev.support_team.filter(id => id !== employeeId)
+                : [...prev.support_team, employeeId]
+        }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,6 +75,9 @@ export default function ProjectFormPage() {
         const data = {
             ...formData,
             client_id: formData.client_id ? parseInt(formData.client_id) : undefined,
+            supervised_by_id: formData.supervised_by_id ? parseInt(formData.supervised_by_id) : undefined,
+            developers: formData.developers.map(id => parseInt(id)),
+            support_team: formData.support_team.map(id => parseInt(id)),
         };
 
         const result = isEdit && projectId
@@ -145,7 +172,86 @@ export default function ProjectFormPage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Supervised By (One Person)
+                            </label>
+                            <select
+                                value={formData.supervised_by_id}
+                                onChange={(e) => setFormData({ ...formData, supervised_by_id: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="">Select Supervisor</option>
+                                {employees.map(emp => (
+                                    <option key={emp.employee_id} value={emp.employee_id}>{emp.first_name} {emp.last_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Status *
+                            </label>
+                            <select
+                                required
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="on_hold">On Hold</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Developed By (Team)
+                            </label>
+                            <div className="border border-gray-300 rounded-lg p-2 h-32 overflow-y-auto">
+                                {employees.map(emp => (
+                                    <div key={emp.employee_id} className="flex items-center mb-1">
+                                        <input
+                                            type="checkbox"
+                                            id={`dev-${emp.employee_id}`}
+                                            checked={formData.developers.includes(emp.employee_id.toString())}
+                                            onChange={() => handleDeveloperToggle(emp.employee_id.toString())}
+                                            className="mr-2 rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor={`dev-${emp.employee_id}`} className="text-sm text-gray-700 select-none">
+                                            {emp.first_name} {emp.last_name}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Primary Support (Team)
+                            </label>
+                            <div className="border border-gray-300 rounded-lg p-2 h-32 overflow-y-auto">
+                                {employees.map(emp => (
+                                    <div key={emp.employee_id} className="flex items-center mb-1">
+                                        <input
+                                            type="checkbox"
+                                            id={`supp-${emp.employee_id}`}
+                                            checked={formData.support_team.includes(emp.employee_id.toString())}
+                                            onChange={() => handleSupportToggle(emp.employee_id.toString())}
+                                            className="mr-2 rounded text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor={`supp-${emp.employee_id}`} className="text-sm text-gray-700 select-none">
+                                            {emp.first_name} {emp.last_name}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Start Date
@@ -168,22 +274,6 @@ export default function ProjectFormPage() {
                                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Status *
-                            </label>
-                            <select
-                                required
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="active">Active</option>
-                                <option value="completed">Completed</option>
-                                <option value="on_hold">On Hold</option>
-                            </select>
                         </div>
                     </div>
 

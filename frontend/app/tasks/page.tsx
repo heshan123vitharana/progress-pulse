@@ -14,7 +14,7 @@ export default function TasksPage() {
     const [filterProject, setFilterProject] = useState('');
 
     const filteredTasks = tasks.filter(t => {
-        const matchesSearch = t.task_name.toLowerCase().includes(searchTerm.toLowerCase()) || t.task_code.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = t.task_name.toLowerCase().includes(searchTerm.toLowerCase()) || (t.task_code || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = !activeTab || t.status === activeTab;
         const matchesPriority = !filterPriority || t.priority.toString() === filterPriority;
         const matchesProject = !filterProject || t.project_id.toString() === filterProject;

@@ -23,6 +23,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
         phone: "",
         department_id: "",
         designation_id: "",
+        reports_to_id: "",
         status: "inactive" as "active" | "inactive",
     });
 
@@ -41,6 +42,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
                     phone: employee.phone || "",
                     department_id: employee.department_id ? employee.department_id.toString() : "",
                     designation_id: employee.designation_id ? employee.designation_id.toString() : "",
+                    reports_to_id: employee.reports_to_id ? employee.reports_to_id.toString() : "",
                     status: employee.status || "inactive",
                 });
             }
@@ -56,6 +58,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
             ...formData,
             department_id: parseInt(formData.department_id),
             designation_id: parseInt(formData.designation_id),
+            reports_to_id: formData.reports_to_id ? parseInt(formData.reports_to_id) : undefined,
         };
 
         const result =
@@ -221,6 +224,28 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
                                 ))}
                             </select>
                         </div>
+
+                        <div>
+                            <label htmlFor="reports_to_id" className="block text-sm font-medium text-gray-700 mb-2">
+                                Reports To
+                            </label>
+                            <select
+                                id="reports_to_id"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={formData.reports_to_id || ""}
+                                onChange={(e) => setFormData({ ...formData, reports_to_id: e.target.value })}
+                            >
+                                <option value="">None (Top Level)</option>
+                                {employees
+                                    .filter(e => !isEdit || !employeeId || e.employee_id.toString() !== employeeId.toString())
+                                    .map((emp) => (
+                                        <option key={Number(emp.employee_id)} value={emp.employee_id.toString()}>
+                                            {emp.first_name} {emp.last_name}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">

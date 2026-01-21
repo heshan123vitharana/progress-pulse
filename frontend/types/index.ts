@@ -34,6 +34,8 @@ export interface Employee {
     status: 'active' | 'inactive';
     department?: Department;
     designation?: Designation;
+    reports_to_id?: number;
+    reports_to?: Employee;
     created_at: string;
     updated_at: string;
 }
@@ -61,7 +63,8 @@ export interface Designation {
 // Task Types
 export interface Task {
     task_id: number;
-    task_code: string;
+    task_code?: string;
+    task_category?: string;
     task_name: string;
     task_description?: string;
     project_id: number;
@@ -74,6 +77,8 @@ export interface Task {
     assigned_to?: number;
     start_date?: string;
     end_date?: string;
+    qa_repeated_reason?: string;
+    completion_notes?: string;
     project?: Project;
     employee?: Employee;
     created_at: string;
@@ -107,6 +112,10 @@ export interface Project {
     status: string;
     description?: string;
     customer?: Customer;
+    supervised_by_id?: number;
+    supervised_by?: Employee | number;
+    developers?: Employee[] | number[];
+    support_team?: Employee[] | number[];
     created_at: string;
     updated_at: string;
 }

@@ -11,20 +11,25 @@ const taskSchema = z.object({
     object_id: z.number().optional().nullable(),
     sub_object_id: z.number().optional().nullable(),
     department_id: z.number().optional().nullable(),
-    assigned_to: z.number().optional().nullable(), // User ID
-    due_date: z.string().optional().nullable(), // ISO Date string
+    assigned_to: z.number().optional().nullable(),
+    due_date: z.string().optional().nullable(),
     task_type: z.enum(['self_assign', 'assign_to_others', 'public']).optional(),
+    task_category: z.string().optional().default('customer'),
 });
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const employeeId = searchParams.get('employee_id');
-        const status = searchParams.get('status'); // Optional status filter
+        const status = searchParams.get('status');
+        const taskType = searchParams.get('task_type'); // Support public/assign_to_others
 
         let whereClause: any = {};
         if (employeeId) {
             whereClause.assigned_to = BigInt(employeeId);
+        }
+        if (taskType === 'public') {
+            whereClause.task_type = 'public';
         }
 
         const tasks = await prisma.tasks.findMany({
@@ -39,10 +44,9 @@ export async function GET(request: Request) {
                 }
             },
             orderBy: { created_at: 'desc' },
-            take: 100 // Safety limit
+            take: 100
         });
 
-        // Handle BigInt serialization
         const safeTasks = JSON.parse(JSON.stringify(tasks, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
         ));
@@ -61,6 +65,23 @@ export async function POST(request: Request) {
         const body = await request.json();
         const validated = taskSchema.parse(body);
 
+        let taskCode: string | null = null;
+        if (validated.project_id) {
+            const project = await prisma.projects.findUnique({
+                where: { project_id: BigInt(validated.project_id) }
+            });
+
+            if (project && project.project_code) {
+                const tasksCount = await prisma.tasks.count({
+                    where: { project_id: BigInt(validated.project_id) }
+                });
+                // Format: PRJ-CODE/0001 (Sequence + 1)
+                // Padding 4 digits
+                const seq = (tasksCount + 1).toString().padStart(4, '0');
+                taskCode = `${project.project_code}/${seq}`;
+            }
+        }
+
         // Create Task
         const newTask = await prisma.tasks.create({
             data: {
@@ -75,6 +96,8 @@ export async function POST(request: Request) {
                 assigned_to: validated.assigned_to ? BigInt(validated.assigned_to) : null,
                 due_date: validated.due_date ? new Date(validated.due_date) : null,
                 task_type: (validated.task_type as any) || 'assign_to_others',
+                task_category: validated.task_category || 'customer',
+                task_code: taskCode,
                 created_at: new Date(),
                 updated_at: new Date()
             },

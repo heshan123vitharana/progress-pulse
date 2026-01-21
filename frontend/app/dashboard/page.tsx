@@ -33,14 +33,15 @@ export default function DashboardPage() {
                         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                         <p className="text-gray-600 mt-1">Welcome back, {user?.name}</p>
                     </div>
-                    {currentEmployee && (
-                        <div className="w-full md:w-auto">
+                    <div className="w-full md:w-auto flex flex-col items-end gap-4">
+                        <img src="/rbs-logo.png" alt="RBS Logo" className="h-16 w-auto object-contain" />
+                        {currentEmployee && (
                             <StatusToggle
                                 employeeId={currentEmployee.employee_id}
                                 initialStatus={currentEmployee.status}
                             />
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {loading ? (
