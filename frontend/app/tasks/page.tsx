@@ -53,23 +53,25 @@ export default function TasksPage() {
                 </div>
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     {loading ? <LoadingSpinner /> : filteredTasks.length === 0 ? <EmptyState message="No tasks found" /> : (
-                        <table className="min-w-full">
-                            <thead className="bg-gray-50">
+                        <table className="min-w-full relative">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Code</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Project</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Priority</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase shadow-sm">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
                                 {filteredTasks.map(t => {
                                     const priority = PRIORITY_LEVELS.find(p => p.value === t.priority);
                                     const status = TASK_STATUSES.find(s => s.value === t.status);
+                                    const isOverdue = t.end_date && new Date(t.end_date) < new Date() && !['5', '6'].includes(t.status);
+
                                     return (
-                                        <tr key={t.task_id} className="hover:bg-gray-50">
+                                        <tr key={t.task_id} className={`hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}`}>
                                             <td className="px-6 py-4 text-sm font-medium">{t.task_code}</td>
                                             <td className="px-6 py-4 text-sm">{t.task_name}</td>
                                             <td className="px-6 py-4 text-sm">{t.project?.project_name || '-'}</td>

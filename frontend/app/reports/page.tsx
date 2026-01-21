@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useReports } from '@/hooks/use-reports';
 import { useEmployees } from '@/hooks/use-employees';
 import { useProjects } from '@/hooks/use-projects';
+import { useTasks } from '@/hooks/use-tasks';
 
 const TASK_STATUSES = [
     { value: '', label: 'All Statuses' },
@@ -20,6 +21,7 @@ export default function ReportsPage() {
     const { generateDailyReport, generateTaskReport, exportReport, loading } = useReports();
     const { employees } = useEmployees();
     const { projects } = useProjects();
+    const { tasks } = useTasks();
 
     const [reportType, setReportType] = useState<'daily' | 'tasks'>('daily');
     const [filters, setFilters] = useState({
@@ -70,7 +72,7 @@ export default function ReportsPage() {
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-80px)] overflow-y-auto">
                 {/* Report Type Selection */}
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Type</h2>
@@ -128,11 +130,13 @@ export default function ReportsPage() {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                             >
                                 <option value="">All Employees</option>
-                                {employees.map(emp => (
-                                    <option key={emp.employee_id} value={emp.employee_id}>
-                                        {emp.first_name} {emp.last_name}
-                                    </option>
-                                ))}
+                                {employees
+                                    .filter(emp => !filters.project_id || tasks.some(t => t.project_id === Number(filters.project_id) && t.assigned_to === emp.employee_id))
+                                    .map(emp => (
+                                        <option key={emp.employee_id} value={emp.employee_id}>
+                                            {emp.first_name} {emp.last_name}
+                                        </option>
+                                    ))}
                             </select>
                         </div>
 
