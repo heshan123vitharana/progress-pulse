@@ -193,15 +193,7 @@ export default function ModulesPage() {
                             )}
 
                             <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                                <button
-                                    onClick={() => router.push(`/modules/${module.id}/objects`)}
-                                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-xl hover:from-violet-600 hover:to-purple-700 shadow-sm hover:shadow-lg transition-all"
-                                >
-                                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                    Objects
-                                </button>
+                                {/* Objects button removed */}
                                 <button
                                     onClick={() => handleEdit(module)}
                                     className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all"

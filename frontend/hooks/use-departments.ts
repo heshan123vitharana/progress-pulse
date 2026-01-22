@@ -19,7 +19,7 @@ export function useDepartments() {
             // Map backend response to frontend interface
             const mappedData = data.map((d: any) => ({
                 department_id: d.department_id,
-                department_name: d.department,
+                department_name: d.department_name || d.department,
                 description: d.description || '',
                 status: d.status || 'active'
             }));

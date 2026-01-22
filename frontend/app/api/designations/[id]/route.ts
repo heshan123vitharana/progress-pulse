@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const designationSchema = z.object({
     designation_name: z.string().min(1).max(255),
-    description: z.string().optional().nullable(),
+    description: z.string().max(500, "Description cannot exceed 500 characters").optional().nullable(),
     status: z.enum(['active', 'inactive']),
 });
 
@@ -20,7 +20,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ success: false, message: 'Designation not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ success: true, data: designation });
+        const safeDesignation = JSON.parse(JSON.stringify(designation, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
+
+        return NextResponse.json({ success: true, data: safeDesignation });
     } catch (error: any) {
         return NextResponse.json({ success: false, message: 'Failed to fetch designation', error: error.message }, { status: 500 });
     }
@@ -63,7 +67,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             }
         });
 
-        return NextResponse.json({ success: true, message: 'Designation updated successfully', data: updated });
+        const safeUpdated = JSON.parse(JSON.stringify(updated, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+        ));
+
+        return NextResponse.json({ success: true, message: 'Designation updated successfully', data: safeUpdated });
 
     } catch (error: any) {
         if (error instanceof z.ZodError) {

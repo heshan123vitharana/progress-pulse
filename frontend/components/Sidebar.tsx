@@ -1,27 +1,29 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 
+// Navigation items with required permissions
 const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { name: 'Employees', href: '/employees', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-    { name: 'Tasks', href: '/tasks', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-    { name: 'Timesheet', href: '/timesheet', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { name: 'Projects', href: '/projects', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
-    { name: 'Modules', href: '/modules', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
-    { name: 'Objects', href: '/objects', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-    { name: 'Customers', href: '/customers', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-    { name: 'Departments', href: '/departments', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-    { name: 'Designations', href: '/designations', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { name: 'Reports', href: '/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { name: 'Analytics', href: '/analytics', icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z' },
-    { name: 'Users', href: '/users', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-    { name: 'Roles', href: '/roles', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
-    { name: 'Activity Logs', href: '/activity-logs', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
+    { name: 'Dashboard', href: '/dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', permissions: ['view_dashboard'] },
+    { name: 'Employees', href: '/employees', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', permissions: ['view_employees'] },
+    { name: 'Designations', href: '/designations', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', permissions: ['manage_designations'] },
+    { name: 'Tasks', href: '/tasks', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', permissions: ['view_tasks'] },
+    { name: 'Timesheet', href: '/timesheet', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', permissions: ['view_timesheet'] },
+    { name: 'Projects', href: '/projects', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', permissions: ['view_projects'] },
+    { name: 'Modules', href: '/modules', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z', permissions: ['view_modules'] },
+    { name: 'Objects', href: '/objects', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', permissions: ['view_objects'] },
+    { name: 'Customers', href: '/customers', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', permissions: ['view_customers'] },
+    { name: 'Departments', href: '/departments', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', permissions: ['manage_departments'] },
+
+    { name: 'Reports', href: '/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', permissions: ['view_reports'] },
+    { name: 'Analytics', href: '/analytics', icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z', permissions: ['view_analytics'] },
+    { name: 'Users', href: '/users', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', permissions: ['manage_users'] },
+    { name: 'Roles', href: '/roles', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', permissions: ['manage_roles'] },
+    { name: 'Activity Logs', href: '/activity-logs', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', permissions: ['view_activity_logs'] },
 ];
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {
@@ -29,9 +31,66 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [userPermissions, setUserPermissions] = useState<string[]>([]);
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuthStore();
+
+    // Fetch user permissions based on their role
+    useEffect(() => {
+        const fetchUserPermissions = async () => {
+            if (!user?.id) {
+                // No user logged in, show all items until auth is confirmed
+                return;
+            }
+
+            // Check if user has role_id 1 (admin) - common admin role ID
+            // or role_id is not set (fallback to show all)
+            if (!user.role_id || Number(user.role_id) === 1) {
+                console.log('Admin user or no role, showing all menu items');
+                setUserPermissions(['all']);
+                return;
+            }
+
+            try {
+                const response = await api.get(`/users/${user.id}/permissions`);
+                if (response.data.success && response.data.data) {
+                    const perms = response.data.data;
+                    // If user has many permissions (like admin), set to 'all' for efficiency
+                    if (perms.length >= 30) {
+                        setUserPermissions(['all']);
+                    } else {
+                        setUserPermissions(perms);
+                    }
+                } else {
+                    // API returned but no permissions - show all as fallback
+                    setUserPermissions(['all']);
+                }
+            } catch (error) {
+                // API error - show all menu items as fallback
+                console.log('Using fallback permissions (showing all menu items)');
+                setUserPermissions(['all']);
+            }
+        };
+        fetchUserPermissions();
+    }, [user?.id, user?.role_id]);
+
+    // Filter navigation based on user permissions
+    const filteredNavigation = useMemo(() => {
+        // If user has 'all' permission or permissions not loaded yet, show all items
+        if (userPermissions.includes('all') || userPermissions.length === 0) {
+            return navigation;
+        }
+
+        return navigation.filter(item => {
+            // If no permissions required, show item
+            if (!item.permissions || item.permissions.length === 0) {
+                return true;
+            }
+            // Check if user has at least one of the required permissions
+            return item.permissions.some(perm => userPermissions.includes(perm));
+        });
+    }, [userPermissions]);
 
     useEffect(() => {
         const fetchNotificationCount = async () => {
@@ -71,7 +130,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     }, [profileDropdownOpen]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             {/* Mobile sidebar */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
@@ -89,7 +148,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                             </button>
                         </div>
                         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                            {navigation.map((item) => (
+                            {filteredNavigation.map((item) => (
                                 <Link
                                     key={item.name}
                                     href={item.href}
@@ -120,11 +179,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                             <img src="/rbs-logo-new.png" alt="Logo" className="relative h-10 w-auto" />
                         </div>
                         <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">Progress Pulse</span>
+
                     </div>
 
                     {/* Navigation */}
                     <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
-                        {navigation.map((item) => (
+                        {filteredNavigation.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}
@@ -193,11 +253,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             {/* Main content */}
             <div className="lg:pl-72">
                 {/* Top Header Bar */}
-                <div className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 sm:px-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg shadow-slate-900/20 backdrop-blur-sm border-b border-slate-700/50">
+                <div className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 sm:px-6 bg-white/80 dark:bg-slate-900/80 shadow-sm dark:shadow-slate-900/20 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 transition-colors duration-300">
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all mr-3"
+                        className="lg:hidden p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all mr-3"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -212,13 +272,14 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
 
                     {/* Center - Real-time Clock */}
                     <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50">
-                            <svg className="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100/50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                            <svg className="w-3 h-3 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span
-                                className="text-cyan-400 text-xs font-medium tracking-wider"
+                                className="text-cyan-700 dark:text-cyan-400 text-xs font-medium tracking-wider"
                                 style={{ fontFamily: "'Poppins', sans-serif" }}
+                                suppressHydrationWarning
                             >
                                 {currentTime.toLocaleTimeString('en-US', {
                                     timeZone: 'Asia/Colombo',
@@ -229,12 +290,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                 })}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50">
-                            <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100/50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             <span
-                                className="text-emerald-400 text-xs font-medium tracking-wide"
+                                className="text-emerald-700 dark:text-emerald-400 text-xs font-medium tracking-wide"
                                 style={{ fontFamily: "'Poppins', sans-serif" }}
                             >
                                 {currentTime.toLocaleDateString('en-US', {
@@ -253,9 +314,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         {/* Notification Bell */}
                         <Link
                             href="/notifications"
-                            className="relative p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all group"
+                            className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-all group"
                         >
-                            <svg className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                             </svg>
                             {notificationCount > 0 && (
@@ -269,16 +330,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         <div className="relative">
                             <button
                                 onClick={(e) => { e.stopPropagation(); setProfileDropdownOpen(!profileDropdownOpen); }}
-                                className="flex items-center space-x-3 p-1.5 pr-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all"
+                                className="flex items-center space-x-3 p-1.5 pr-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-all"
                             >
                                 <div className="relative">
                                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-cyan-500/25">
                                         {user?.name?.charAt(0).toUpperCase() || 'U'}
                                     </div>
-                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-800"></div>
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800"></div>
                                 </div>
-                                <span className="text-sm font-medium text-white hidden sm:block">{user?.name || 'Admin'}</span>
-                                <svg className={`w-4 h-4 text-slate-400 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <span className="text-sm font-medium text-slate-700 dark:text-white hidden sm:block">{user?.name || 'Admin'}</span>
+                                <svg className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>

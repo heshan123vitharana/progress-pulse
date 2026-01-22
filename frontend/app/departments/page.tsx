@@ -4,6 +4,36 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { useDepartments } from '@/hooks/use-departments';
 
+// Simple loading spinner component to avoid dependency issues if shared component is not available yet
+const LoadingSpinner = () => (
+    <div className="flex flex-col items-center space-y-4">
+        <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-slate-500 font-medium">Loading departments...</p>
+    </div>
+);
+
+// Simple empty state component
+const EmptyState = ({ message }: { message: string }) => (
+    <div className="text-center py-16">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
+            <svg className="w-10 h-10 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-slate-700 mb-2">{message}</h3>
+        <p className="text-slate-500 mb-6">Add your first department to get started</p>
+        <Link
+            href="/departments/create"
+            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 shadow-lg shadow-teal-500/30 transition-all"
+        >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Department
+        </Link>
+    </div>
+);
+
 export default function DepartmentsPage() {
     const { departments, loading, deleteDepartment } = useDepartments();
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,11 +73,11 @@ export default function DepartmentsPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Departments</h1>
-                            <p className="text-slate-500 text-sm">{filtered.length} of {departments.length} departments</p>
+                            <p className="text-slate-500 text-sm">{departments.length} total departments</p>
                         </div>
                     </div>
-                    <Link 
-                        href="/departments/create" 
+                    <Link
+                        href="/departments/create"
                         className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 shadow-lg shadow-teal-500/30 hover:shadow-xl transition-all"
                     >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,115 +88,87 @@ export default function DepartmentsPage() {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm p-5 mb-6 border border-slate-200/50">
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div className="relative">
-                            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <input 
-                                type="text" 
-                                placeholder="Search departments..." 
-                                value={searchTerm} 
-                                onChange={e => setSearchTerm(e.target.value)} 
-                                className="w-full pl-12 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all" 
-                            />
-                        </div>
-                        <select 
-                            value={filterStatus} 
-                            onChange={e => setFilterStatus(e.target.value)} 
-                            className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-700 bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-                        >
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 p-4 mb-8 flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                        <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search departments..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-slate-700"
+                        />
                     </div>
+                    <select
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value)}
+                        className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-slate-700 min-w-[150px]"
+                    >
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
                 </div>
 
-                {/* Table */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden">
-                    {loading ? (
-                        <div className="flex justify-center items-center py-16">
-                            <div className="flex flex-col items-center space-y-4">
-                                <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                                <p className="text-slate-500 font-medium">Loading departments...</p>
-                            </div>
-                        </div>
-                    ) : filtered.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
-                                <svg className="w-10 h-10 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-700 mb-2">No departments found</h3>
-                            <p className="text-slate-500 mb-6">Add your first department to get started</p>
-                            <Link 
-                                href="/departments/create" 
-                                className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 shadow-lg shadow-teal-500/30 transition-all"
+                {/* Grid Content */}
+                {loading ? (
+                    <div className="flex justify-center py-20">
+                        <LoadingSpinner />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <EmptyState message="No departments found" />
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {filtered.map(d => (
+                            <div
+                                key={d.department_id}
+                                className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-slate-200/50 relative overflow-hidden"
                             >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add Department
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full">
-                                <thead className="bg-slate-50/80">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Description</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {filtered.map(d => (
-                                        <tr key={d.department_id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center">
-                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-teal-500/25 mr-3">
-                                                        {d.department_name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <span className="text-sm font-semibold text-slate-800">{d.department_name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">{d.description || '-'}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getStatusStyle(d.status)}`}>
-                                                    {d.status || 'Unknown'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
-                                                    <Link 
-                                                        href={`/departments/${d.department_id}/edit`} 
-                                                        className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                        </svg>
-                                                    </Link>
-                                                    <button 
-                                                        onClick={() => handleDelete(d.department_id, d.department_name)} 
-                                                        className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                                {/* Decorative Gradient Top */}
+                                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 to-cyan-600"></div>
+
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition-colors">
+                                            {d.department_name}
+                                        </h3>
+                                    </div>
+                                    <span className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-lg text-xs font-semibold border ${getStatusStyle(d.status)}`}>
+                                        {d.status?.toUpperCase()}
+                                    </span>
+                                </div>
+
+                                <div className="mb-6">
+                                    <p className="text-sm text-slate-500 line-clamp-3">
+                                        {d.description || 'No description provided for this department.'}
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-2 pt-4 border-t border-slate-100">
+                                    <Link
+                                        href={`/departments/${d.department_id}/edit`}
+                                        className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-teal-50 text-teal-600 text-sm font-medium rounded-xl hover:bg-teal-100 transition-all"
+                                    >
+                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Edit
+                                    </Link>
+                                    <button
+                                        onClick={() => handleDelete(d.department_id, d.department_name)}
+                                        className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </Sidebar>
     );

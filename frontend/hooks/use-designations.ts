@@ -18,7 +18,7 @@ export function useDesignations() {
             const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
             // Map backend data to frontend interface
             const data: Designation[] = rawData.map((item: any) => ({
-                id: item.designation_id || item.id, // Handle mismatch if any
+                designation_id: item.designation_id || item.id,
                 designation_name: item.designation || item.designation_name,
                 description: item.description,
                 status: item.status,
@@ -41,7 +41,8 @@ export function useDesignations() {
             await fetchDesignations();
             return { success: true };
         } catch (err: any) {
-            const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Failed to create designation';
+            console.error('Create Designation Error:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to create designation';
             const validationErrors = err.response?.data?.errors;
             return { success: false, error: errorMessage, validationErrors };
         }
@@ -53,7 +54,8 @@ export function useDesignations() {
             await fetchDesignations();
             return { success: true };
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Failed to update designation';
+            console.error('Update Designation Error:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to update designation';
             const validationErrors = err.response?.data?.errors;
             return { success: false, error: errorMessage, validationErrors };
         }

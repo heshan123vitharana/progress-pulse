@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useDesignations } from '@/hooks/use-designations';
+import api from '@/lib/api';
 
 export default function DesignationForm() {
     const router = useRouter();
@@ -13,11 +14,26 @@ export default function DesignationForm() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (isEdit && params?.id) {
-            const des = designations.find(d => d.designation_id === parseInt(params.id as string));
-            if (des) setFormData({ designation_name: des.designation_name, description: des.description || '', status: des.status as 'active' | 'inactive' });
-        }
-    }, [isEdit, params?.id, designations]);
+        const fetchDesignation = async () => {
+            if (isEdit && params?.id) {
+                try {
+                    // Direct fetch for edit page reliability
+                    const response = await api.get(`/designations/${params.id}`);
+                    if (response.data.success) {
+                        const des = response.data.data;
+                        setFormData({
+                            designation_name: des.designation || des.designation_name,
+                            description: des.description || '',
+                            status: des.status as 'active' | 'inactive'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch designation:', error);
+                }
+            }
+        };
+        fetchDesignation();
+    }, [isEdit, params?.id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +46,7 @@ export default function DesignationForm() {
             if (result.validationErrors) {
                 alert('Validation Errors:\n' + JSON.stringify(result.validationErrors, null, 2));
             } else {
-                alert(result.error);
+                alert(result.error || 'An unexpected error occurred');
             }
             setLoading(false);
         }
@@ -40,7 +56,12 @@ export default function DesignationForm() {
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm">
                 <div className="max-w-3xl mx-auto px-4 py-4">
-                    <Link href="/designations" className="text-blue-600 text-sm block mb-1"> Back</Link>
+                    <Link href="/designations" className="text-blue-600 text-sm mb-1 inline-flex items-center hover:underline">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back
+                    </Link>
                     <h1 className="text-2xl font-bold">{isEdit ? 'Edit' : 'Add'} Designation</h1>
                 </div>
             </header>
@@ -52,7 +73,18 @@ export default function DesignationForm() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-2">Description</label>
-                        <textarea rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border rounded-lg" />
+                        <textarea
+                            rows={3}
+                            value={formData.description}
+                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full px-4 py-2 border rounded-lg"
+                            maxLength={500}
+                        />
+                        <div className="flex justify-end mt-1">
+                            <span className={`text-xs ${formData.description.length >= 500 ? 'text-red-500' : 'text-gray-500'}`}>
+                                {formData.description.length}/500 characters
+                            </span>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-2">Status *</label>

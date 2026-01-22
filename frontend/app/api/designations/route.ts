@@ -5,7 +5,7 @@ import { z } from 'zod';
 // Validation Schema matches DesignationController.php
 const designationSchema = z.object({
     designation_name: z.string().min(1).max(255), // Maps to 'designation'
-    description: z.string().optional().nullable(),
+    description: z.string().max(500, "Description cannot exceed 500 characters").optional().nullable(),
     status: z.enum(['active', 'inactive']),
 });
 

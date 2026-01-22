@@ -19,8 +19,31 @@ export function useEmployees() {
         try {
             setLoading(true);
             const response = await api.get('/employees');
-            const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
-            setEmployees(data);
+            const rawData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+
+            // Map backend fields to frontend Employee interface
+            const mappedData = rawData.map((e: any) => ({
+                ...e,
+                employee_code: `EMP${String(e.employee_id).padStart(3, '0')}`,
+                phone: e.office_phone || e.private_phone || '',
+                // Reconstruct objects from flat API response
+                department: e.department_name ? {
+                    department_id: Number(e.department_id),
+                    department_name: e.department_name,
+                    status: 'active'
+                } : null,
+                designation: e.designation_name ? {
+                    designation_id: Number(e.designation_id),
+                    designation_name: e.designation_name,
+                    status: 'active'
+                } : null,
+                // Ensure IDs are numbers
+                department_id: e.department_id ? Number(e.department_id) : 0,
+                designation_id: e.designation_id ? Number(e.designation_id) : 0,
+                reports_to_id: e.reports_to_id ? Number(e.reports_to_id) : undefined
+            }));
+
+            setEmployees(mappedData);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch employees');
             setEmployees([]);
