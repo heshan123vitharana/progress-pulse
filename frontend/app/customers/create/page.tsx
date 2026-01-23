@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useCustomers } from '@/hooks/use-customers';
+import PhoneInput from '@/components/ui/PhoneInput';
 
 export default function CustomerFormPage() {
     const router = useRouter();
@@ -17,7 +18,7 @@ export default function CustomerFormPage() {
         customer_name: '',
         company: '',
         email: '',
-        phone: '',
+        phone: isEdit ? '' : '+94 ',
         address: '',
         status: 'active' as 'active' | 'inactive',
     });
@@ -132,12 +133,9 @@ export default function CustomerFormPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Phone
                             </label>
-                            <input
-                                type="tel"
+                            <PhoneInput
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="+1234567890"
+                                onChange={(value) => setFormData({ ...formData, phone: value })}
                             />
                         </div>
                     </div>

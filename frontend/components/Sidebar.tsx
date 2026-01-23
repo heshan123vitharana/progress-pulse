@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { toast } from 'react-hot-toast';
+import { signOut } from 'next-auth/react';
 import api from '@/lib/api';
 
 // Navigation items with required permissions
@@ -37,6 +38,49 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { user, logout } = useAuthStore();
     const { sidebarCollapsed, toggleSidebar } = useSettingsStore();
+
+    const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+    const fetchNotifications = async () => {
+        setNotificationsLoading(true);
+        try {
+            const res = await api.get('/notifications');
+            setNotifications(Array.isArray(res.data) ? res.data : res.data.data || []);
+
+            // Also update count
+            const countRes = await api.get('/notifications/count');
+            if (countRes.data.success) {
+                setNotificationCount(countRes.data.data.unreadCount);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        }
+        setNotificationsLoading(false);
+    };
+
+    const markAsRead = async (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await api.put(`/notifications/${id}/read`);
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+            setNotificationCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    const markAllRead = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await api.post('/notifications/mark-all-read');
+            setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+            setNotificationCount(0);
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
 
     // Fetch user permissions based on their role
     useEffect(() => {
@@ -124,12 +168,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             if (profileDropdownOpen) {
                 setProfileDropdownOpen(false);
             }
+            if (notificationDropdownOpen && !(event.target as Element).closest('.notification-container')) {
+                setNotificationDropdownOpen(false);
+            }
         };
-        if (profileDropdownOpen) {
+        if (profileDropdownOpen || notificationDropdownOpen) {
             setTimeout(() => document.addEventListener('click', handleClickOutside), 100);
         }
         return () => document.removeEventListener('click', handleClickOutside);
-    }, [profileDropdownOpen]);
+    }, [profileDropdownOpen, notificationDropdownOpen]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -278,7 +325,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                         <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                                     </div>
                                     <button
-                                        onClick={() => { logout(); toast.success('Logged out successfully'); }}
+                                        onClick={async () => {
+                                            logout();
+                                            toast.success('Logged out successfully');
+                                            await signOut({ callbackUrl: '/login' });
+                                        }}
                                         className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all ml-1"
                                         title="Logout"
                                     >
@@ -355,19 +406,103 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     {/* Right side - Notifications & Profile */}
                     <div className="flex items-center space-x-3">
                         {/* Notification Bell */}
-                        <Link
-                            href="/notifications"
-                            className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-all group"
-                        >
-                            <svg className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                            </svg>
-                            {notificationCount > 0 && (
-                                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 animate-pulse">
-                                    {notificationCount > 99 ? '99+' : notificationCount}
-                                </span>
+                        {/* Notification Bell */}
+                        <div className="relative notification-container">
+                            <button
+                                onClick={() => {
+                                    if (!notificationDropdownOpen) fetchNotifications();
+                                    setNotificationDropdownOpen(!notificationDropdownOpen);
+                                    setProfileDropdownOpen(false);
+                                }}
+                                className="relative p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-all group"
+                            >
+                                <svg className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                {notificationCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30 animate-pulse">
+                                        {notificationCount > 99 ? '99+' : notificationCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Notification Dropdown */}
+                            {notificationDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-2xl shadow-slate-900/50 py-2 z-50 border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm overflow-hidden ring-1 ring-black ring-opacity-5">
+                                    <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700/50 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h3>
+                                        {notifications.some(n => !n.read_at) && (
+                                            <button
+                                                onClick={markAllRead}
+                                                className="text-xs text-blue-600 dark:text-cyan-400 hover:underline font-medium"
+                                            >
+                                                Mark all as read
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                                        {notificationsLoading ? (
+                                            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-2"></div>
+                                                Loading...
+                                            </div>
+                                        ) : notifications.length === 0 ? (
+                                            <div className="p-8 text-center">
+                                                <div className="bg-slate-100 dark:bg-slate-800 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                                                    <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                    </svg>
+                                                </div>
+                                                <p className="text-slate-500 dark:text-slate-400 text-sm">No notifications</p>
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {notifications.map(n => (
+                                                    <div
+                                                        key={n.id}
+                                                        className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                                                    >
+                                                        <div className="flex gap-3">
+                                                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.read_at ? 'bg-blue-500' : 'bg-transparent'}`}></div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={`text-sm font-medium ${!n.read_at ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                    {n.title}
+                                                                </p>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1 line-clamp-2">
+                                                                    {n.message}
+                                                                </p>
+                                                                <div className="flex justify-between items-center mt-2">
+                                                                    <span className="text-[10px] text-slate-400">
+                                                                        {new Date(n.created_at).toLocaleString('en-US', {
+                                                                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                                                        })}
+                                                                    </span>
+                                                                    {!n.read_at && (
+                                                                        <button
+                                                                            onClick={(e) => markAsRead(n.id, e)}
+                                                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                                                        >
+                                                                            Mark read
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Link
+                                        href="/notifications"
+                                        onClick={() => setNotificationDropdownOpen(false)}
+                                        className="block text-center py-2.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 border-t border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    >
+                                        View all notifications
+                                    </Link>
+                                </div>
                             )}
-                        </Link>
+                        </div>
 
                         {/* User Profile */}
                         <div className="relative">
@@ -423,7 +558,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                     </div>
                                     <div className="border-t border-slate-700/50 pt-1">
                                         <button
-                                            onClick={() => { logout(); toast.success('Logged out'); setProfileDropdownOpen(false); }}
+                                            onClick={async () => {
+                                                logout();
+                                                toast.success('Logged out');
+                                                setProfileDropdownOpen(false);
+                                                await signOut({ callbackUrl: '/login' });
+                                            }}
                                             className="flex items-center w-full px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all"
                                         >
                                             <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

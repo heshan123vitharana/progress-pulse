@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEmployees } from "@/hooks/use-employees";
 import { toast } from "react-hot-toast";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 interface EmployeeFormProps {
     isEdit?: boolean;
@@ -19,7 +20,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
         first_name: "",
         last_name: "",
         email: "",
-        phone: "",
+        phone: isEdit ? "" : "+94 ",
         department_id: "",
         designation_id: "",
         reports_to_id: "",
@@ -166,13 +167,9 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
                             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                                 Phone
                             </label>
-                            <input
-                                type="text"
-                                id="phone"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            <PhoneInput
                                 value={formData.phone || ""}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                placeholder="+1234567890"
+                                onChange={(value) => setFormData({ ...formData, phone: value })}
                             />
                         </div>
 
@@ -218,7 +215,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
 
                         <div>
                             <label htmlFor="reports_to_id" className="block text-sm font-medium text-gray-700 mb-2">
-                                Reports To
+                                Supervised By
                             </label>
                             <select
                                 id="reports_to_id"
