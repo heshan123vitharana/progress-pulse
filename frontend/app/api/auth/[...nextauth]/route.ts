@@ -57,6 +57,7 @@ export const authOptions: NextAuthOptions = {
                         name: user.name,
                         employee_id: user.employee_id,
                         role_id: user.role_id ? Number(user.role_id) : null,
+                        avatar: user.avatar,
                     };
                 } catch (error) {
                     console.error("Authorize error:", error);
@@ -74,10 +75,14 @@ export const authOptions: NextAuthOptions = {
                     id: token.id,
                     employee_id: token.employee_id,
                     role_id: token.role_id,
+                    avatar: token.avatar,
                 },
             };
         },
-        jwt: ({ token, user }) => {
+        jwt: ({ token, user, trigger, session }) => {
+            if (trigger === "update" && session?.avatar) {
+                token.avatar = session.avatar;
+            }
             if (user) {
                 const u = user as any;
                 return {
@@ -85,6 +90,7 @@ export const authOptions: NextAuthOptions = {
                     id: u.id,
                     employee_id: u.employee_id,
                     role_id: u.role_id,
+                    avatar: u.avatar,
                 };
             }
             return token;

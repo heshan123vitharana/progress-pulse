@@ -19,6 +19,7 @@ export function AuthSync() {
                 email: session.user.email || '',
                 employee_id: session.user.employee_id || undefined,
                 role_id: session.user.role_id || undefined,
+                avatar: session.user.avatar || undefined,
                 // Default values for required fields not in session
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),

@@ -5,6 +5,7 @@ export interface User {
     email: string;
     employee_id?: number;
     role_id?: number;
+    avatar?: string;
     created_at: string;
     updated_at: string;
 }
@@ -167,15 +168,7 @@ export interface PaginatedResponse<T> {
     total: number;
 }
 
-// User Types
-export interface User {
-    id: number;
-    name: string;
-    email: string;
-    role_id?: number;
-    created_at: string;
-    updated_at: string;
-}
+
 
 // Time Entry Types
 export interface TimeEntry {

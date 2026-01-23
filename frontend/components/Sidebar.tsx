@@ -228,7 +228,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                         <div className="flex items-center">
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/25">
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                    {user?.avatar ? (
+                                        <img src={user.avatar} alt="Profile" className="w-full h-full rounded-xl object-cover" />
+                                    ) : (
+                                        user?.name?.charAt(0).toUpperCase() || 'U'
+                                    )}
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
                             </div>
@@ -334,7 +338,11 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                             >
                                 <div className="relative">
                                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-cyan-500/25">
-                                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                        {user?.avatar ? (
+                                            <img src={user.avatar} alt="Profile" className="w-full h-full rounded-lg object-cover" />
+                                        ) : (
+                                            user?.name?.charAt(0).toUpperCase() || 'U'
+                                        )}
                                     </div>
                                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800"></div>
                                 </div>
@@ -392,6 +400,6 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 </div>
                 <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
             </div>
-        </div>
+        </div >
     );
 }
