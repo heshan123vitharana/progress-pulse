@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { useSettingsStore } from '@/store/settings-store';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/api';
 
@@ -35,6 +36,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuthStore();
+    const { sidebarCollapsed, toggleSidebar } = useSettingsStore();
 
     // Fetch user permissions based on their role
     useEffect(() => {
@@ -170,61 +172,94 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Desktop sidebar */}
-            <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
+            <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col lg:z-50 transition-all duration-300 ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'}`}>
                 <div className="flex flex-col flex-1 bg-slate-950 shadow-2xl">
                     {/* Logo Header */}
-                    <div className="flex items-center h-16 px-5 space-x-3 border-b border-slate-700/50 bg-slate-950">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full"></div>
-                            <img src="/rbs-logo-new.png" alt="Logo" className="relative h-10 w-auto" />
-                        </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">Progress Pulse</span>
+                    <div className={`flex items-center h-16 px-4 border-b border-slate-700/50 bg-slate-950 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+                        {!sidebarCollapsed && (
+                            <div className="flex items-center space-x-3">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-cyan-500/20 blur-xl rounded-full"></div>
+                                    <img src="/rbs-logo-new.png" alt="Logo" className="relative h-10 w-auto" />
+                                </div>
+                                <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent whitespace-nowrap">Progress Pulse</span>
+                            </div>
+                        )}
+                        {sidebarCollapsed && (
+                            <img src="/rbs-logo-new.png" alt="Logo" className="relative h-8 w-auto" />
+                        )}
 
+                        <button
+                            onClick={toggleSidebar}
+                            className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all ${sidebarCollapsed
+                                ? 'absolute left-full top-6 ml-3 bg-slate-800 border border-slate-700 shadow-md z-50'
+                                : ''
+                                }`}
+                        >
+                            <svg className={`w-5 h-5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                            </svg>
+                        </button>
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                         {filteredNavigation.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${pathname === item.href
+                                className={`group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative ${pathname === item.href
                                     ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 shadow-lg shadow-cyan-500/10 border border-cyan-500/30'
                                     : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                                    }`}
+                                    } ${sidebarCollapsed ? 'justify-center px-2' : ''}`}
+                                title={sidebarCollapsed ? item.name : ''}
                             >
-                                <div className={`p-1.5 rounded-lg mr-3 transition-all ${pathname === item.href
+                                <div className={`p-1.5 rounded-lg transition-all ${pathname === item.href
                                     ? 'bg-cyan-500/20'
                                     : 'bg-slate-700/50 group-hover:bg-slate-600/50'
-                                    }`}>
+                                    } ${sidebarCollapsed ? 'mr-0' : 'mr-3'}`}>
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                                     </svg>
                                 </div>
-                                {item.name}
-                                {pathname === item.href && (
-                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+                                {!sidebarCollapsed && (
+                                    <>
+                                        <span className="truncate">{item.name}</span>
+                                        {pathname === item.href && (
+                                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+                                        )}
+                                    </>
+                                )}
+                                {/* Tooltip for collapsed state */}
+                                {sidebarCollapsed && (
+                                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl border border-slate-700">
+                                        {item.name}
+                                        {/* Arrow */}
+                                        <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45 border-l border-b border-slate-700"></div>
+                                    </div>
                                 )}
                             </Link>
                         ))}
                     </nav>
 
                     {/* Support Contact */}
-                    <div className="px-4 py-3 border-t border-slate-700/50">
-                        <div className="flex items-center text-slate-400 text-xs">
-                            <svg className="w-4 h-4 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            <span className="text-slate-500">Support:</span>
+                    {!sidebarCollapsed && (
+                        <div className="px-4 py-3 border-t border-slate-700/50">
+                            <div className="flex items-center text-slate-400 text-xs">
+                                <svg className="w-4 h-4 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                <span className="text-slate-500">Support:</span>
+                            </div>
+                            <div className="mt-1 ml-6 text-xs text-slate-400">
+                                <p>+94 71 187 0575</p>
+                                <p>+94 71 431 0100</p>
+                            </div>
                         </div>
-                        <div className="mt-1 ml-6 text-xs text-slate-400">
-                            <p>+94 71 187 0575</p>
-                            <p>+94 71 431 0100</p>
-                        </div>
-                    </div>
+                    )}
 
                     {/* User Footer */}
-                    <div className="p-4 border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm">
+                    <div className={`p-4 border-t border-slate-700/50 bg-slate-900/80 backdrop-blur-sm ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
                         <div className="flex items-center">
                             <div className="relative">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/25">
@@ -236,26 +271,30 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                 </div>
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
                             </div>
-                            <div className="flex-1 ml-3">
-                                <p className="text-sm font-medium text-white">{user?.name}</p>
-                                <p className="text-xs text-slate-400">{user?.email}</p>
-                            </div>
-                            <button
-                                onClick={() => { logout(); toast.success('Logged out successfully'); }}
-                                className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                                title="Logout"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                            </button>
+                            {!sidebarCollapsed && (
+                                <>
+                                    <div className="flex-1 ml-3 overflow-hidden">
+                                        <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                                        <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { logout(); toast.success('Logged out successfully'); }}
+                                        className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all ml-1"
+                                        title="Logout"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Main content */}
-            <div className="lg:pl-72">
+            <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
                 {/* Top Header Bar */}
                 <div className="sticky top-0 z-40 flex items-center justify-between h-14 px-4 sm:px-6 bg-white/80 dark:bg-slate-900/80 shadow-sm dark:shadow-slate-900/20 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 transition-colors duration-300">
                     {/* Mobile menu button */}
