@@ -23,7 +23,6 @@ export async function GET(request: Request) {
             where: whereClause,
             include: {
                 project: true,
-                objects: true,
             },
             orderBy: { created_at: 'desc' },
         });
@@ -34,6 +33,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ success: true, data: safeModules });
     } catch (error: any) {
+        console.error("GET /api/modules Error:", error);
         return NextResponse.json(
             { success: false, message: 'Failed to fetch modules', error: error.message },
             { status: 500 }
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         // Load relations (fetch again)
         const ModuleWithRelations = await prisma.modules.findUnique({
             where: { id: newModule.id },
-            include: { project: true, objects: true }
+            include: { project: true }
         });
 
         const safeModule = JSON.parse(JSON.stringify(ModuleWithRelations, (key, value) =>
