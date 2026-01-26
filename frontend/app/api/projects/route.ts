@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         );
     } catch (error: any) {
         if (error instanceof z.ZodError) {
+            console.error("Project Validation Error:", error.flatten().fieldErrors);
             return NextResponse.json({ success: false, message: 'Validation failed', errors: error.flatten().fieldErrors }, { status: 422 });
         }
         return NextResponse.json(
