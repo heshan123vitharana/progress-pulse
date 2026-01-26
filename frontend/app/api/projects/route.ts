@@ -4,13 +4,15 @@ import { z } from 'zod';
 
 const projectSchema = z.object({
     project_name: z.string().min(1).max(255),
-    project_code: z.string().max(50).optional().nullable(),
-    client_name: z.string().max(255).optional().nullable(),
-    client_email: z.string().email().max(255).optional().or(z.literal('')).nullable(),
-    start_date: z.string().optional().nullable(), // Date string
-    end_date: z.string().optional().nullable(),
-    status: z.enum(['planned', 'in_progress', 'completed', 'on_hold', 'cancelled']).optional().nullable(), // Adjusted enum based on likely values, will defaults to 'planned'
-    customer_id: z.number().optional().nullable(), // Added relation support if needed
+    project_code: z.string().max(50).optional().or(z.literal('')).nullable(),
+    description: z.string().optional().or(z.literal('')).nullable(),
+    client_id: z.number().optional().nullable(), // Frontend sends client_id
+    start_date: z.string().optional().or(z.literal('')).nullable(),
+    end_date: z.string().optional().or(z.literal('')).nullable(),
+    status: z.enum(['planned', 'active', 'in_progress', 'completed', 'on_hold', 'cancelled']).optional().nullable(),
+    supervised_by_id: z.number().optional().nullable(),
+    developers: z.array(z.number()).optional().nullable(),
+    support_team: z.array(z.number()).optional().nullable(),
 });
 
 export async function GET(request: Request) {
@@ -61,11 +63,11 @@ export async function POST(request: Request) {
             data: {
                 project_name: validated.project_name,
                 project_code: finalProjectCode,
-                // Manual mapping if field names differ or for specific logic
-                customer_id: validated.customer_id ? BigInt(validated.customer_id) : undefined,
+                customer_id: validated.client_id ? BigInt(validated.client_id) : null,
                 start_date: validated.start_date ? new Date(validated.start_date) : null,
                 end_date: validated.end_date ? new Date(validated.end_date) : null,
                 status: (validated.status as any) || 'planned',
+                supervised_by_id: validated.supervised_by_id ? BigInt(validated.supervised_by_id) : null,
                 created_at: new Date(),
                 updated_at: new Date()
             },
