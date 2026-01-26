@@ -29,15 +29,15 @@ export function useTimeTracking() {
     const fetchActiveTimer = async () => {
         try {
             const res = await api.get('/time-entries/active');
-            setActiveTimer(res.data || null);
+            setActiveTimer(res.data.data || null);
         } catch (err) { }
     };
 
     const startTimer = async (taskId?: number, projectId?: number, description?: string) => {
         try {
             const res = await api.post('/time-entries/start', { task_id: taskId, project_id: projectId, description });
-            setActiveTimer(res.data);
-            return { success: true, data: res.data };
+            setActiveTimer(res.data.data); // API returns { success: true, data: ... }
+            return { success: true, data: res.data.data };
         } catch (err: any) {
             return { success: false, error: err.response?.data?.message || 'Failed to start timer' };
         }
@@ -49,7 +49,7 @@ export function useTimeTracking() {
             const res = await api.post(`/time-entries/${activeTimer.id}/stop`);
             setActiveTimer(null);
             await fetchTimeEntries();
-            return { success: true, data: res.data };
+            return { success: true, data: res.data.data };
         } catch (err: any) {
             return { success: false, error: err.response?.data?.message || 'Failed to stop timer' };
         }
@@ -59,7 +59,7 @@ export function useTimeTracking() {
         try {
             const res = await api.post('/time-entries', data);
             await fetchTimeEntries();
-            return { success: true, data: res.data };
+            return { success: true, data: res.data.data };
         } catch (err: any) {
             return { success: false, error: err.response?.data?.message || 'Failed to create time entry' };
         }

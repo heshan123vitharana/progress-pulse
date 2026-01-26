@@ -18,7 +18,7 @@ export function useTasks() {
     const fetchTasks = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/active-tasks');
+            const response = await api.get('/tasks');
             const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
             setTasks(data);
         } catch (err: any) {

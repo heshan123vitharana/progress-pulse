@@ -23,11 +23,11 @@ export default function TimesheetPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const result = await createTimeEntry({
-            task_id: formData.task_id ? parseInt(formData.task_id) : undefined,
-            project_id: formData.project_id ? parseInt(formData.project_id) : undefined,
-            description: formData.description,
-            start_time: formData.start_time,
-            end_time: formData.end_time,
+            task_id: formData.task_id ? parseInt(formData.task_id) : null,
+            project_id: formData.project_id ? parseInt(formData.project_id) : null,
+            description: formData.description || undefined,
+            start_time: formData.start_time || undefined,
+            end_time: formData.end_time || null,
             is_billable: formData.is_billable,
         });
         if (result.success) {
@@ -303,8 +303,8 @@ export default function TimesheetPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${entry.is_billable
-                                                        ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-700 border border-emerald-200'
-                                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                    ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-700 border border-emerald-200'
+                                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                                                     }`}>
                                                     {entry.is_billable ? (
                                                         <>

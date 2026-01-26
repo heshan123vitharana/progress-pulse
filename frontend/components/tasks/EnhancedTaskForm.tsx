@@ -7,9 +7,11 @@ import { toast } from 'react-hot-toast';
 interface EnhancedTaskFormProps {
     onSuccess?: () => void;
     onCancel?: () => void;
+    taskId?: string;
+    initialData?: any;
 }
 
-export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFormProps) {
+export default function EnhancedTaskForm({ onSuccess, onCancel, taskId, initialData }: EnhancedTaskFormProps) {
     const [projects, setProjects] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
     const [objects, setObjects] = useState<any[]>([]);
@@ -37,6 +39,26 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
         fetchDepartments();
         fetchEmployees();
     }, []);
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                project_id: initialData.project_id?.toString() || '',
+                module_id: initialData.module_id?.toString() || '',
+                object_id: initialData.object_id?.toString() || '',
+                sub_object_id: initialData.sub_object_id?.toString() || '',
+                task_name: initialData.task_name || '',
+                description: initialData.description || '',
+                task_type: initialData.task_type || 'self_assign',
+                department_id: initialData.department_id?.toString() || '',
+                assigned_employee_id: initialData.assigned_to?.toString() || '',
+                task_priority: initialData.task_priority || 1,
+                due_date: initialData.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
+                due_time: initialData.due_date ? new Date(initialData.due_date).toTimeString().slice(0, 5) : ''
+            });
+            // Attachments handling can be added here if API supports returning them in compatible format
+        }
+    }, [initialData]);
 
     useEffect(() => {
         if (formData.project_id) {
@@ -189,18 +211,23 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/tasks', { ...formData, attachments });
-            toast.success('Task created successfully!');
+            if (taskId) {
+                await api.put(`/tasks/${taskId}`, { ...formData, attachments });
+                toast.success('Task updated successfully!');
+            } else {
+                await api.post('/tasks', { ...formData, attachments });
+                toast.success('Task created successfully!');
+            }
             if (onSuccess) onSuccess();
         } catch (error: any) {
-            console.error('Error creating task:', error);
-            toast.error(error.response?.data?.message || 'Failed to create task');
+            console.error('Error saving task:', error);
+            toast.error(error.response?.data?.message || 'Failed to save task');
         }
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 bg-white text-gray-900 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-4">Create New Task</h2>
+            <h2 className="text-2xl font-bold mb-4">{taskId ? 'Edit Task' : 'Create New Task'}</h2>
 
             {/* Task Type Selection */}
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -588,7 +615,7 @@ export default function EnhancedTaskForm({ onSuccess, onCancel }: EnhancedTaskFo
                     type="submit"
                     className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
                 >
-                    Create Task
+                    {taskId ? 'Update Task' : 'Create Task'}
                 </button>
                 {onCancel && (
                     <button

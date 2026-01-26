@@ -82,6 +82,12 @@ export interface Task {
     completion_notes?: string;
     project?: Project;
     employee?: Employee;
+    assigned_user?: {
+        id: number;
+        name: string;
+        email: string;
+        avatar?: string;
+    };
     created_at: string;
     updated_at: string;
 }

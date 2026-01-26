@@ -114,6 +114,7 @@ export async function POST(request: Request) {
 
         const customerId = BigInt(decoded.customer_id);
         const body = await request.json();
+        console.log('Received Report Issue Body:', body);
         const { title, description, priority, project_id, screenshots } = body;
 
         if (!title) {

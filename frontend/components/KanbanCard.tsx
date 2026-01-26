@@ -56,12 +56,14 @@ export default function KanbanCard({ task }: KanbanCardProps) {
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     {/* Assignee */}
                     <div className="flex items-center gap-2">
-                        {task.employee ? (
+                        {task.employee || task.assigned_user ? (
                             <div className="flex items-center gap-1.5">
                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                                    {task.employee.first_name.charAt(0)}
+                                    {(task.employee?.first_name || task.assigned_user?.name || '?').charAt(0)}
                                 </div>
-                                <span className="text-xs text-slate-600">{task.employee.first_name}</span>
+                                <span className="text-xs text-slate-600">
+                                    {task.employee?.first_name || task.assigned_user?.name}
+                                </span>
                             </div>
                         ) : (
                             <span className="text-xs text-slate-400 italic">Unassigned</span>

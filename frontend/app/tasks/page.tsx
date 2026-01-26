@@ -13,10 +13,10 @@ export default function TasksPage() {
     const [filterProject, setFilterProject] = useState('');
 
     const filteredTasks = tasks.filter(t => {
-        const matchesSearch = t.task_name.toLowerCase().includes(searchTerm.toLowerCase()) || (t.task_code || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = (t.task_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (t.task_code || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = !activeTab || t.status === activeTab;
-        const matchesPriority = !filterPriority || t.priority.toString() === filterPriority;
-        const matchesProject = !filterProject || t.project_id.toString() === filterProject;
+        const matchesPriority = !filterPriority || (t.priority?.toString() === filterPriority);
+        const matchesProject = !filterProject || (t.project_id?.toString() === filterProject);
         return matchesSearch && matchesStatus && matchesPriority && matchesProject;
     });
 
@@ -189,9 +189,9 @@ export default function TasksPage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredTasks.map(t => {
-                                        const priority = PRIORITY_LEVELS.find(p => p.value === t.priority);
-                                        const status = TASK_STATUSES.find(s => s.value === t.status);
-                                        const isOverdue = t.end_date && new Date(t.end_date) < new Date() && !['5', '6'].includes(t.status);
+                                        const priority = PRIORITY_LEVELS.find(p => p.value.toString() === t.priority?.toString());
+                                        const status = TASK_STATUSES.find(s => s.value.toString() === t.status?.toString());
+                                        const isOverdue = t.end_date && new Date(t.end_date) < new Date() && !['5', '6'].includes(t.status?.toString());
 
                                         return (
                                             <tr key={t.task_id} className={`hover:bg-slate-50/50 transition-colors ${isOverdue ? 'bg-rose-50/50' : ''}`}>
@@ -213,13 +213,13 @@ export default function TasksPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">{t.project?.project_name || '-'}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getPriorityStyle(t.priority.toString())}`}>
-                                                        {priority?.label || t.priority}
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getPriorityStyle(t.priority?.toString() || '')}`}>
+                                                        {priority?.label || t.priority || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getStatusStyle(t.status)}`}>
-                                                        {status?.label || t.status}
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${getStatusStyle(t.status?.toString() || '')}`}>
+                                                        {status?.label || t.status || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">

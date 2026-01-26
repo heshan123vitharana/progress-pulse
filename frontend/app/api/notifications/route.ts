@@ -23,9 +23,9 @@ export async function GET(request: Request) {
         // Convert BigInt to string only for serialization
         const serializedNotifications = notifications.map(notification => ({
             ...notification,
-            id: Number(notification.id),
+            id: notification.id,
             notifiable_id: notification.notifiable_id.toString(),
-            data: typeof notification.data === 'bigint' ? notification.data.toString() : notification.data
+            data: notification.data
         }));
 
         return NextResponse.json({

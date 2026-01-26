@@ -240,6 +240,7 @@ model projects {
   modules modules[]
   customer customers? @relation(fields: [customer_id], references: [customer_id])
   tasks tasks[]
+  time_entries time_entries[]
 }
 
 model roles {
@@ -401,6 +402,7 @@ model tasks {
   created_user users? @relation("CreatedBy", fields: [created_by], references: [id])
   assignments taskassignments[]
   attachments task_attachments[]
+  time_entries time_entries[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -422,6 +424,10 @@ model time_entries {
   @@index([project_id], map: "time_entries_project_id_foreign")
   @@index([task_id], map: "time_entries_task_id_foreign")
   @@index([user_id], map: "time_entries_user_id_foreign")
+
+  task          tasks?    @relation(fields: [task_id], references: [task_id])
+  project       projects? @relation(fields: [project_id], references: [project_id])
+  user          users     @relation(fields: [user_id], references: [id])
 }
 
 model users {
@@ -443,6 +449,7 @@ model users {
   role roles? @relation(fields: [role_id], references: [id])
   assigned_tasks tasks[] @relation("AssignedTo")
   created_tasks tasks[] @relation("CreatedBy")
+  time_entries time_entries[]
 }
 
 // Customer Portal - Tasks submitted by customers

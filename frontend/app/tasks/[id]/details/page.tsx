@@ -150,7 +150,11 @@ export default function TaskDetailsPage() {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Assigned To</label>
-                                        <p className="mt-1 text-gray-900">{task.employee ? `${task.employee.first_name} ${task.employee.last_name}` : 'Unassigned'}</p>
+                                        <p className="mt-1 text-gray-900">
+                                            {task.employee
+                                                ? `${task.employee.first_name} ${task.employee.last_name}`
+                                                : (task.assigned_user?.name || 'Unassigned')}
+                                        </p>
                                     </div>
                                 </div>
 

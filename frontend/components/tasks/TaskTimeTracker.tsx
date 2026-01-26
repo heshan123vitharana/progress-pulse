@@ -2,61 +2,55 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { useTimeTracking } from '@/hooks/use-time-tracking';
 
 interface TimeTrackerProps {
     taskId: number;
 }
 
 export default function TaskTimeTracker({ taskId }: TimeTrackerProps) {
-    const [isTracking, setIsTracking] = useState(false);
+    const { activeTimer, startTimer, stopTimer, loading: hookLoading } = useTimeTracking();
     const [totalSeconds, setTotalSeconds] = useState(0);
     const [currentSessionSeconds, setCurrentSessionSeconds] = useState(0);
-    const [loading, setLoading] = useState(true);
+
+    const isTracking = activeTimer?.task_id === taskId;
 
     useEffect(() => {
-        fetchTimeTracking();
-        const interval = setInterval(() => {
-            if (isTracking) {
-                fetchTimeTracking();
-            }
-        }, 1000);
+        // Poll for total time specific to this task (legacy endpoint for stats)
+        // Ideally this should be replaced by a stats endpoint, but keeping for now to preserve "Total Time" feature
+        fetchTaskStats();
+
+        let interval: NodeJS.Timeout;
+        if (isTracking && activeTimer) {
+            // Calculate session time locally based on start_time
+            const start = new Date(activeTimer.start_time).getTime();
+            interval = setInterval(() => {
+                setCurrentSessionSeconds(Math.floor((Date.now() - start) / 1000));
+            }, 1000);
+        } else {
+            setCurrentSessionSeconds(0);
+        }
 
         return () => clearInterval(interval);
-    }, [taskId, isTracking]);
+    }, [taskId, isTracking, activeTimer]);
 
-    const fetchTimeTracking = async () => {
+    const fetchTaskStats = async () => {
         try {
             const response = await api.get(`/tasks/${taskId}/time-tracking`);
             if (response.data.success) {
-                setIsTracking(response.data.data.time_tracking_active);
                 setTotalSeconds(response.data.data.total_time_seconds);
-                setCurrentSessionSeconds(response.data.data.current_session_seconds);
             }
         } catch (error) {
-            console.error('Error fetching time tracking:', error);
-        } finally {
-            setLoading(false);
+            console.error('Error fetching task stats:', error);
         }
     };
 
     const handleSwitchOn = async () => {
-        try {
-            await api.post(`/tasks/${taskId}/time-tracking/switch-on`);
-            setIsTracking(true);
-            fetchTimeTracking();
-        } catch (error: any) {
-            alert(error.response?.data?.message || 'Failed to start tracking');
-        }
+        await startTimer(taskId);
     };
 
     const handleSwitchOff = async () => {
-        try {
-            await api.post(`/tasks/${taskId}/time-tracking/switch-off`);
-            setIsTracking(false);
-            fetchTimeTracking();
-        } catch (error: any) {
-            alert(error.response?.data?.message || 'Failed to stop tracking');
-        }
+        await stopTimer();
     };
 
     const formatTime = (seconds: number) => {
@@ -66,7 +60,7 @@ export default function TaskTimeTracker({ taskId }: TimeTrackerProps) {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
-    if (loading) {
+    if (hookLoading) {
         return <div>Loading time tracker...</div>;
     }
 
@@ -79,7 +73,7 @@ export default function TaskTimeTracker({ taskId }: TimeTrackerProps) {
                     <div>
                         <div className="text-sm text-gray-600">Total Time</div>
                         <div className="text-3xl font-bold text-gray-800">
-                            {formatTime(totalSeconds)}
+                            {formatTime(totalSeconds + (isTracking ? currentSessionSeconds : 0))}
                         </div>
                     </div>
 
@@ -97,13 +91,17 @@ export default function TaskTimeTracker({ taskId }: TimeTrackerProps) {
                     {!isTracking ? (
                         <button
                             onClick={handleSwitchOn}
-                            className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2"
+                            disabled={!!activeTimer} // Disable if tracking another task
+                            className={`flex-1 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 ${activeTimer
+                                ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                                : 'bg-green-600 text-white hover:bg-green-700'
+                                }`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            Start Tracking
+                            {activeTimer ? 'Timer Active Elsewhere' : 'Start Tracking'}
                         </button>
                     ) : (
                         <button

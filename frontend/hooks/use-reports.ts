@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import api from '@/lib/api';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toast } from 'react-hot-toast';
 
 interface ReportFilters {
     start_date?: string;
@@ -10,6 +11,17 @@ interface ReportFilters {
     project_id?: number;
     status?: string;
 }
+
+const getPriorityLabel = (priority: number | string): string => {
+    const p = typeof priority === 'string' ? parseInt(priority) : priority;
+    switch (p) {
+        case 1: return 'Low';
+        case 2: return 'Medium';
+        case 3: return 'High';
+        case 4: return 'Urgent';
+        default: return 'Medium';
+    }
+};
 
 export function useReports() {
     const [loading, setLoading] = useState(false);
@@ -64,8 +76,10 @@ export function useReports() {
             }
 
             if (!data || data.length === 0) {
-                setError("No data available to export");
-                return { success: false, error: "No data" };
+                const msg = "No data available to export";
+                setError(msg);
+                toast.error(msg);
+                return { success: false, error: msg };
             }
 
             // Generate PDF
@@ -94,7 +108,7 @@ export function useReports() {
                     item.project_name || '-',
                     item.module_name || '-',
                     item.assigned_to || '-',
-                    item.priority || '-'
+                    getPriorityLabel(item.priority || 2)
                 ]);
             } else {
                 head = [['Code', 'Task Name', 'Project', 'Assigned To', 'Status', 'Date']];
@@ -132,6 +146,7 @@ export function useReports() {
             console.error(err);
             const errorMsg = err.message || 'Failed to export report';
             setError(errorMsg);
+            toast.error(errorMsg);
             return { success: false, error: errorMsg };
         } finally {
             setLoading(false);
