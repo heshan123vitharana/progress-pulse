@@ -6,7 +6,7 @@ const projectSchema = z.object({
     project_name: z.string().min(1).max(255),
     project_code: z.string().max(50).optional().nullable(),
     client_name: z.string().max(255).optional().nullable(),
-    client_email: z.string().email().max(255).optional().nullable(),
+    client_email: z.string().email().max(255).optional().or(z.literal('')).nullable(),
     start_date: z.string().optional().nullable(), // Date string
     end_date: z.string().optional().nullable(),
     status: z.enum(['planned', 'in_progress', 'completed', 'on_hold', 'cancelled']).optional().nullable(), // Adjusted enum based on likely values, will defaults to 'planned'
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        console.log("Project Creation Request Body:", body);
         const validated = projectSchema.parse(body);
 
         // Auto-generate project code if not provided
