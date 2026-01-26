@@ -13,6 +13,7 @@ const employeeSchema = z.object({
     private_phone: z.string().max(20).optional().nullable(),
     department_id: z.number().optional().nullable(),
     designation_id: z.number().optional().nullable(),
+    role_id: z.number().optional().nullable(),
     status: z.enum(['active', 'inactive']).optional(),
 });
 
@@ -124,12 +125,16 @@ export async function POST(request: Request) {
             // Default password: "Password@123" (should be changed by user)
             const hashedPassword = await bcrypt.hash('Password@123', 10);
 
+            // Fetch default role if none provided (optional, e.g., 'employee' or 'guest')
+            // For now, we rely on the specific role provided or let it be null/DB default
+
             await tx.users.create({
                 data: {
                     name: `${validated.first_name} ${validated.last_name}`,
                     email: validated.email,
                     password: hashedPassword,
-                    employee_id: Number(newEmployee.employee_id), // Link to employee
+                    employee_id: Number(newEmployee.employee_id),
+                    role_id: validated.role_id ? BigInt(validated.role_id) : null,
                     status: 'active',
                     created_at: new Date(),
                     updated_at: new Date()

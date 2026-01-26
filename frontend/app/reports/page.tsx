@@ -6,6 +6,7 @@ import { useReports } from '@/hooks/use-reports';
 import { useEmployees } from '@/hooks/use-employees';
 import { useProjects } from '@/hooks/use-projects';
 import { useTasks } from '@/hooks/use-tasks';
+import BackButton from '@/components/ui/BackButton';
 
 const TASK_STATUSES = [
     { value: '', label: 'All Statuses' },
@@ -24,9 +25,13 @@ export default function ReportsPage() {
     const { tasks } = useTasks();
 
     const [reportType, setReportType] = useState<'daily' | 'tasks'>('daily');
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
     const [filters, setFilters] = useState({
-        start_date: '',
-        end_date: '',
+        start_date: today,
+        end_date: today,
         employee_id: '',
         project_id: '',
         status: '',
@@ -64,13 +69,12 @@ export default function ReportsPage() {
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 text-sm mb-1 block">
-                        ← Back to Dashboard
-                    </Link>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+                    <BackButton />
                 </div>
             </header>
+
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-80px)] overflow-y-auto">
                 {/* Report Type Selection */}
@@ -78,7 +82,11 @@ export default function ReportsPage() {
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Type</h2>
                     <div className="flex gap-4">
                         <button
-                            onClick={() => setReportType('daily')}
+                            onClick={() => {
+                                setReportType('daily');
+                                // Reset to today when switching to daily
+                                setFilters(prev => ({ ...prev, start_date: today, end_date: today }));
+                            }}
                             className={`px-6 py-3 rounded-lg font-medium transition ${reportType === 'daily'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -102,25 +110,39 @@ export default function ReportsPage() {
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                            <input
-                                type="date"
-                                value={filters.start_date}
-                                onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                            />
-                        </div>
+                        {reportType === 'daily' ? (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                <input
+                                    type="date"
+                                    value={filters.start_date}
+                                    onChange={(e) => setFilters({ ...filters, start_date: e.target.value, end_date: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                                />
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={filters.start_date}
+                                        onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                            <input
-                                type="date"
-                                value={filters.end_date}
-                                onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
-                            />
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                                    <input
+                                        type="date"
+                                        value={filters.end_date}
+                                        onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>

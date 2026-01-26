@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEmployees } from "@/hooks/use-employees";
 import { toast } from "react-hot-toast";
 import PhoneInput from "@/components/ui/PhoneInput";
+import api from "@/lib/api";
 
 interface EmployeeFormProps {
     isEdit?: boolean;
@@ -24,8 +25,23 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
         department_id: "",
         designation_id: "",
         reports_to_id: "",
+        role_id: "",
         status: "inactive" as "active" | "inactive",
     });
+
+    const [roles, setRoles] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const response = await api.get('/roles');
+                setRoles(Array.isArray(response.data) ? response.data : (response.data.data || []));
+            } catch (error) {
+                console.error('Failed to fetch roles:', error);
+            }
+        };
+        fetchRoles();
+    }, []);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -42,6 +58,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
                     department_id: employee.department_id ? employee.department_id.toString() : "",
                     designation_id: employee.designation_id ? employee.designation_id.toString() : "",
                     reports_to_id: employee.reports_to_id ? employee.reports_to_id.toString() : "",
+                    role_id: (employee as any).role_id || "", // Cast to any if role_id is not in standard Employee type yet
                     status: employee.status || "inactive",
                 });
             }
@@ -59,6 +76,7 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
             department_id: parseInt(formData.department_id),
             designation_id: parseInt(formData.designation_id),
             reports_to_id: formData.reports_to_id ? parseInt(formData.reports_to_id) : undefined,
+            role_id: formData.role_id ? parseInt(formData.role_id) : undefined,
         };
         // Remove phone from payload to match API schema exact expectation if using strict validation, 
         // but typically extra fields are ignored. To be safe, rely on the destructuring above if needed, 
@@ -253,6 +271,26 @@ export default function EmployeeForm({ isEdit = false, employeeId = null }: Empl
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="role_id" className="block text-sm font-medium text-gray-700 mb-2">
+                                System Role (User Permission)
+                            </label>
+                            <select
+                                id="role_id"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                value={formData.role_id || ""}
+                                onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
+                            >
+                                <option value="">None (No System Access)</option>
+                                {roles.map((role) => (
+                                    <option key={role.id} value={role.id}>
+                                        {role.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Assigns the user's permission level in the system.</p>
                         </div>
                     </div>
 

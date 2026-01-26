@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import BackButton from '@/components/ui/BackButton';
 
 interface CustomerData {
     customer_id: string;
@@ -114,12 +115,10 @@ export default function ReportIssuePage() {
             <header className="bg-slate-900/80 backdrop-blur-sm border-b border-emerald-500/20 sticky top-0 z-50">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
-                        <Link href="/customer-portal/dashboard" className="flex items-center gap-3 text-emerald-200/70 hover:text-white transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                            Back to Dashboard
-                        </Link>
+                        <BackButton
+                            href="/customer-portal/dashboard"
+                            className="bg-transparent border-emerald-500/30 text-emerald-100 hover:bg-emerald-500/10 hover:text-white"
+                        />
                     </div>
                 </div>
             </header>
@@ -183,12 +182,12 @@ export default function ReportIssuePage() {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, priority: p.value })}
                                     className={`py-3 rounded-xl border-2 transition-all font-medium ${formData.priority === p.value
-                                            ? p.color === 'emerald'
-                                                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-                                                : p.color === 'amber'
-                                                    ? 'border-amber-500 bg-amber-500/20 text-amber-400'
-                                                    : 'border-red-500 bg-red-500/20 text-red-400'
-                                            : 'border-white/20 text-white/60 hover:border-white/40'
+                                        ? p.color === 'emerald'
+                                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+                                            : p.color === 'amber'
+                                                ? 'border-amber-500 bg-amber-500/20 text-amber-400'
+                                                : 'border-red-500 bg-red-500/20 text-red-400'
+                                        : 'border-white/20 text-white/60 hover:border-white/40'
                                         }`}
                                 >
                                     {p.label}
@@ -221,8 +220,8 @@ export default function ReportIssuePage() {
                             onPaste={handlePaste}
                             tabIndex={0}
                             className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400/50 ${uploading
-                                    ? 'border-emerald-400 bg-emerald-500/10'
-                                    : 'border-white/20 hover:border-emerald-500/50 hover:bg-white/5'
+                                ? 'border-emerald-400 bg-emerald-500/10'
+                                : 'border-white/20 hover:border-emerald-500/50 hover:bg-white/5'
                                 }`}
                         >
                             <div className="flex flex-col items-center gap-2">

@@ -6,6 +6,7 @@ import { TaskStatusChart, TaskCompletionTrend, ResourceUtilization, ProjectProgr
 import { useTasks } from '@/hooks/use-tasks';
 import { useProjects } from '@/hooks/use-projects';
 import { useEmployees } from '@/hooks/use-employees';
+import BackButton from '@/components/ui/BackButton';
 
 export default function AnalyticsPage() {
     const { tasks } = useTasks();
@@ -63,15 +64,17 @@ export default function AnalyticsPage() {
         <Sidebar>
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                    <div>
-                        <Link href="/dashboard" className="text-blue-600 text-sm block mb-1">← Back to Dashboard</Link>
+                    <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
                     </div>
-                    <select value={dateRange} onChange={e => setDateRange(e.target.value)} className="px-4 py-2 border rounded-lg text-gray-900 bg-white">
-                        <option value="7">Last 7 Days</option>
-                        <option value="30">Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                    </select>
+                    <div className="flex items-center gap-4">
+                        <select value={dateRange} onChange={e => setDateRange(e.target.value)} className="px-4 py-2 border rounded-lg text-gray-900 bg-white">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                        </select>
+                        <BackButton />
+                    </div>
                 </div>
             </header>
             <main className="max-w-7xl mx-auto px-4 py-8">
