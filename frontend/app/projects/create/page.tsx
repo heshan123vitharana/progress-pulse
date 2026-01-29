@@ -26,10 +26,28 @@ export default function ProjectFormPage() {
         supervised_by_id: '',
         developers: [] as string[],
         support_team: [] as string[],
+        main_project_id: '',
     });
 
+    const [mainProjects, setMainProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        // Fetch Main Projects
+        const fetchMainProjects = async () => {
+            try {
+                const res = await fetch('/api/main-projects');
+                const data = await res.json();
+                if (data.success) {
+                    setMainProjects(data.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch main projects', err);
+            }
+        };
+        fetchMainProjects();
+    }, []);
 
     useEffect(() => {
         if (isEdit && projectId && projects.length > 0) {
@@ -46,6 +64,7 @@ export default function ProjectFormPage() {
                     supervised_by_id: project.supervised_by_id?.toString() || '',
                     developers: project.developers?.map(d => (typeof d === 'object' ? d.employee_id.toString() : d.toString())) || [],
                     support_team: project.support_team?.map(d => (typeof d === 'object' ? d.employee_id.toString() : d.toString())) || [],
+                    main_project_id: (project as any).main_project_id?.toString() || '',
                 });
             }
         }
@@ -80,6 +99,7 @@ export default function ProjectFormPage() {
             supervised_by_id: formData.supervised_by_id ? parseInt(formData.supervised_by_id) : undefined,
             developers: formData.developers.map(id => parseInt(id)),
             support_team: formData.support_team.map(id => parseInt(id)),
+            main_project_id: formData.main_project_id ? parseInt(formData.main_project_id) : undefined,
         };
 
         const result = isEdit && projectId
@@ -144,6 +164,25 @@ export default function ProjectFormPage() {
                                 ))}
                             </select>
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Main Project (Optional)
+                        </label>
+                        <select
+                            value={formData.main_project_id}
+                            onChange={(e) => setFormData({ ...formData, main_project_id: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">None (Independent Project)</option>
+                            {mainProjects.map(mp => (
+                                <option key={mp.id} value={mp.id}>{mp.name}</option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Is this a sub-project of a larger main project (e.g., Mobile App)?
+                        </p>
                     </div>
 
                     <div>

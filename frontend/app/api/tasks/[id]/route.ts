@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { requireAuth } from '@/lib/auth-utils';
 
 const taskSchema = z.object({
     task_name: z.string().min(1).max(255).optional(),
@@ -17,6 +18,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         const p = await params;
         const id = BigInt(p.id);
 
+        let session;
+        try {
+            session = await requireAuth();
+        } catch (e) {
+            // Allow public access mostly, but assignments need auth
+        }
+
         const task = await prisma.tasks.findUnique({
             where: { task_id: id },
             include: {
@@ -24,7 +32,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 module: true,
                 object: true,
                 department: true,
-                assigned_user: { select: { id: true, name: true } }
+                assigned_user: { select: { id: true, name: true } },
+                assignments: {
+                    include: {
+                        assigned_employee: true
+                    },
+                    orderBy: { created_at: 'desc' },
+                    take: 1
+                }
             }
         });
 
@@ -35,6 +50,48 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         const safeTask = JSON.parse(JSON.stringify(task, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
         ));
+
+        // Fallback for assigned_user & Populate employee object
+        if (safeTask.assignments && safeTask.assignments.length > 0) {
+            const latestAssignment = safeTask.assignments[0];
+            if (latestAssignment.assigned_employee) {
+                // Populate employee field for frontend
+                safeTask.employee = latestAssignment.assigned_employee;
+
+                // Fallback for assigned_user if null
+                if (!safeTask.assigned_user) {
+                    safeTask.assigned_user = {
+                        id: 0,
+                        name: `${latestAssignment.assigned_employee.first_name} ${latestAssignment.assigned_employee.last_name}`,
+                        email: latestAssignment.assigned_employee.email || '',
+                    };
+                }
+            }
+        }
+
+        // Check for current user's assignment if logged in
+        if (session?.user?.id) {
+            const userId = parseInt(session.user.id);
+            const user = await prisma.users.findUnique({
+                where: { id: userId }
+            });
+
+            if (user?.employee_id) {
+                const employeeId = BigInt(user.employee_id);
+                const userAssignment = await prisma.taskassignments.findFirst({
+                    where: {
+                        task_id: id,
+                        assigned_employee_id: employeeId
+                    }
+                });
+                if (userAssignment) {
+                    // @ts-ignore
+                    safeTask.currentUserAssignment = JSON.parse(JSON.stringify(userAssignment, (key, value) =>
+                        typeof value === 'bigint' ? value.toString() : value
+                    ));
+                }
+            }
+        }
 
         return NextResponse.json({ success: true, data: safeTask });
     } catch (error: any) {
@@ -85,6 +142,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
         // Send Notification if assigned_to changed (and is not null)
         if (assignedToUserId && existing.assigned_to !== assignedToUserId) {
+            let employeeIdForAssignment = validated.assigned_employee_id || validated.assigned_to;
+
+            // Create TaskAssignment entry
+            if (employeeIdForAssignment) {
+                await prisma.taskassignments.create({
+                    data: {
+                        task_id: updated.task_id,
+                        assigned_employee_id: BigInt(employeeIdForAssignment),
+                        status: 1, // Assigned
+                        completed_datetime: new Date(0), // Placeholder for mandatory field
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    }
+                });
+            }
+
             try {
                 const notificationData = {
                     title: 'Task Assigned',
@@ -100,7 +173,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                         id: crypto.randomUUID(),
                         type: 'task_assignment',
                         notifiable_type: 'User',
-                        notifiable_id: assignedToUserId,
+                        notifiable_id: assignedToUserId, // This MUST be a User ID
                         data: JSON.stringify(notificationData),
                         created_at: new Date(),
                         updated_at: new Date()

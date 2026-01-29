@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
@@ -42,6 +42,23 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const prevNotificationCountRef = useRef(0);
+
+    // Effect to play sound when notification count increases
+    useEffect(() => {
+        if (notificationCount > prevNotificationCountRef.current) {
+            try {
+                const audio = new Audio('/notification.mp3');
+                audio.play().catch(e => {
+                    // Audio play might fail if user strict interaction policy, or file missing
+                    console.log('Notification sound failed to play:', e);
+                });
+            } catch (e) {
+                console.error('Error handling notification sound:', e);
+            }
+        }
+        prevNotificationCountRef.current = notificationCount;
+    }, [notificationCount]);
 
     const fetchNotifications = async () => {
         setNotificationsLoading(true);
@@ -457,39 +474,52 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                             </div>
                                         ) : (
                                             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {notifications.map(n => (
-                                                    <div
-                                                        key={n.id}
-                                                        className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                                                    >
-                                                        <div className="flex gap-3">
-                                                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.read_at ? 'bg-blue-500' : 'bg-transparent'}`}></div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className={`text-sm font-medium ${!n.read_at ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                                    {n.title}
-                                                                </p>
-                                                                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1 line-clamp-2">
-                                                                    {n.message}
-                                                                </p>
-                                                                <div className="flex justify-between items-center mt-2">
-                                                                    <span className="text-[10px] text-slate-400">
-                                                                        {new Date(n.created_at).toLocaleString('en-US', {
-                                                                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                                                        })}
-                                                                    </span>
-                                                                    {!n.read_at && (
-                                                                        <button
-                                                                            onClick={(e) => markAsRead(n.id, e)}
-                                                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                                                        >
-                                                                            Mark read
-                                                                        </button>
-                                                                    )}
+                                                {notifications.map(n => {
+                                                    let content = { title: 'Notification', message: 'No content', link: '#' };
+                                                    try {
+                                                        if (typeof n.data === 'string') {
+                                                            content = JSON.parse(n.data);
+                                                        } else if (typeof n.data === 'object' && n.data !== null) {
+                                                            content = n.data;
+                                                        }
+                                                    } catch (e) {
+                                                        console.error('Failed to parse notification data', e);
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key={n.id}
+                                                            className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                                                        >
+                                                            <div className="flex gap-3">
+                                                                <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.read_at ? 'bg-blue-500' : 'bg-transparent'}`}></div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className={`text-sm font-medium ${!n.read_at ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                        {content.title}
+                                                                    </p>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1 line-clamp-2">
+                                                                        {content.message}
+                                                                    </p>
+                                                                    <div className="flex justify-between items-center mt-2">
+                                                                        <span className="text-[10px] text-slate-400">
+                                                                            {new Date(n.created_at).toLocaleString('en-US', {
+                                                                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                                                            })}
+                                                                        </span>
+                                                                        {!n.read_at && (
+                                                                            <button
+                                                                                onClick={(e) => markAsRead(n.id, e)}
+                                                                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            >
+                                                                                Mark read
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>

@@ -5,6 +5,7 @@ import { User } from '@/types';
 interface Role {
     id: number;
     name: string;
+    slug?: string;
     description?: string;
 }
 

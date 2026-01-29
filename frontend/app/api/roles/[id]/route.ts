@@ -8,8 +8,9 @@ const roleSchema = z.object({
     status: z.enum(['active', 'inactive']).optional(),
 });
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const body = await request.json();
         const validated = roleSchema.parse(body); // Basic validation
         const permissions = (body as any).permissions || [];
@@ -18,7 +19,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const updatedRole = await prisma.$transaction(async (tx) => {
             // 1. Update Role fields
             const role = await tx.roles.update({
-                where: { id: BigInt(params.id) },
+                where: { id: BigInt(id) },
                 data: {
                     name: validated.name,
                     description: validated.description,
@@ -30,14 +31,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
             // 2. Delete existing permissions
             await tx.roles_permissions.deleteMany({
-                where: { role_id: BigInt(params.id) }
+                where: { role_id: BigInt(id) }
             });
 
             // 3. Add new permissions
             if (permissions.length > 0) {
                 await tx.roles_permissions.createMany({
                     data: permissions.map((pId: string) => ({
-                        role_id: BigInt(params.id),
+                        role_id: BigInt(id),
                         permission_id: BigInt(pId)
                     }))
                 });
@@ -60,10 +61,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         await prisma.roles.delete({
-            where: { id: BigInt(params.id) }
+            where: { id: BigInt(id) }
         });
 
         return NextResponse.json({ success: true, message: 'Role deleted' });

@@ -14,11 +14,7 @@ export async function PUT(
         }
 
         const { id } = await params;
-        const notificationId = Number(id);
-
-        if (isNaN(notificationId)) {
-            return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
-        }
+        const notificationId = id;
 
         // Verify ownership
         const notification = await prisma.notifications.findUnique({
@@ -42,7 +38,7 @@ export async function PUT(
             success: true,
             data: {
                 ...updated,
-                id: Number(updated.id),
+                id: updated.id,
                 notifiable_id: updated.notifiable_id.toString()
             }
         });

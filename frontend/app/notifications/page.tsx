@@ -46,20 +46,38 @@ export default function NotificationsPage() {
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     {loading ? <div className="p-8 text-center">Loading...</div> : (
                         <div className="divide-y">
-                            {notifications.map(n => (
-                                <div key={n.id} className={`p-4 hover:bg-gray-50 ${!n.read_at ? 'bg-blue-50' : ''}`}>
-                                    <div className="flex justify-between">
-                                        <div className="flex-1">
-                                            <p className="font-medium">{n.title}</p>
-                                            <p className="text-sm text-gray-600 mt-1">{n.message}</p>
-                                            <span className="text-xs text-gray-500 mt-2 block">{new Date(n.created_at).toLocaleString()}</span>
+                            {notifications.map(n => {
+                                let content = { title: 'Notification', message: 'No content', link: '#' };
+                                try {
+                                    if (typeof n.data === 'string') {
+                                        content = JSON.parse(n.data);
+                                    } else if (typeof n.data === 'object' && n.data !== null) {
+                                        content = n.data;
+                                    }
+                                } catch (e) {
+                                    console.error('Failed to parse notification data', e);
+                                }
+
+                                return (
+                                    <div key={n.id} className={`p-4 hover:bg-gray-50 ${!n.read_at ? 'bg-blue-50' : ''}`}>
+                                        <div className="flex justify-between">
+                                            <div className="flex-1">
+                                                <p className="font-medium">{content.title}</p>
+                                                <p className="text-sm text-gray-600 mt-1">{content.message}</p>
+                                                {content.link && (
+                                                    <Link href={content.link} className="text-sm text-blue-600 hover:underline mt-1 inline-block">
+                                                        View Details
+                                                    </Link>
+                                                )}
+                                                <span className="text-xs text-gray-500 mt-2 block">{new Date(n.created_at).toLocaleString()}</span>
+                                            </div>
+                                            {!n.read_at && (
+                                                <button onClick={() => markAsRead(n.id)} className="text-blue-600 text-sm ml-4 whitespace-nowrap">Mark read</button>
+                                            )}
                                         </div>
-                                        {!n.read_at && (
-                                            <button onClick={() => markAsRead(n.id)} className="text-blue-600 text-sm ml-4">Mark read</button>
-                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {notifications.length === 0 && <div className="p-8 text-center text-gray-500">No notifications</div>}
                         </div>
                     )}

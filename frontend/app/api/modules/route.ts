@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
+import { handleApiError, createSuccessResponse } from '@/lib/api-errors';
+import { serializeBigInt, parseToBigInt } from '@/lib/bigint-utils';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const moduleSchema = z.object({
-    project_id: z.number().int().positive(), // Validating ID existence is better done via DB Check if needed
+    project_id: z.number().int().positive(),
     module_name: z.string().min(1).max(255),
-    description: z.string().optional().nullable(),
+    description: z.string().optional().or(z.literal('')).nullable(),
     status: z.enum(['draft', 'active', 'completed', 'archived']).optional().nullable(),
 });
 
@@ -16,80 +17,75 @@ export async function GET(request: Request) {
 
         let whereClause = {};
         if (projectId) {
-            whereClause = { project_id: BigInt(projectId) };
+            try {
+                whereClause = { project_id: BigInt(projectId) };
+            } catch (e) {
+                console.error('Invalid project_id:', projectId);
+                return createSuccessResponse(serializeBigInt([])); // Return empty if invalid ID
+            }
         }
 
         const modules = await prisma.modules.findMany({
             where: whereClause,
             include: {
-                project: true,
+                project: {
+                    select: {
+                        project_id: true,
+                        project_name: true,
+                        project_code: true
+                    }
+                }
             },
             orderBy: { created_at: 'desc' },
         });
 
-        const safeModules = JSON.parse(JSON.stringify(modules, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        return NextResponse.json({ success: true, data: safeModules });
-    } catch (error: any) {
-        console.error("GET /api/modules Error:", error);
-        return NextResponse.json(
-            { success: false, message: 'Failed to fetch modules', error: error.message },
-            { status: 500 }
-        );
+        return createSuccessResponse(serializeBigInt(modules));
+    } catch (error) {
+        console.error('Modules API Error:', error);
+        return handleApiError(error);
     }
 }
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-
-        // Manual cast or parsing for BigInt if needed, but standard JSON usually passes numbers. 
-        // Zod expects number for project_id.
         const validated = moduleSchema.parse(body);
 
-        const checkProject = await prisma.projects.findUnique({
+        // Verify project exists
+        const project = await prisma.projects.findUnique({
             where: { project_id: BigInt(validated.project_id) }
         });
 
-        if (!checkProject) {
-            return NextResponse.json(
-                { success: false, message: 'Validation failed', errors: { project_id: ['The selected project id is invalid.'] } },
-                { status: 422 }
-            );
+        if (!project) {
+            return createSuccessResponse(null, 'Project not found', 404);
         }
 
         const newModule = await prisma.modules.create({
             data: {
                 project_id: BigInt(validated.project_id),
                 module_name: validated.module_name,
-                description: validated.description,
-                status: validated.status as any,
+                description: validated.description || null,
+                status: (validated.status as any) || 'active',
+                created_at: new Date(),
+                updated_at: new Date()
             },
+            include: {
+                project: {
+                    select: {
+                        project_id: true,
+                        project_name: true,
+                        project_code: true
+                    }
+                }
+            }
         });
 
-        // Load relations (fetch again)
-        const ModuleWithRelations = await prisma.modules.findUnique({
-            where: { id: newModule.id },
-            include: { project: true }
-        });
-
-        const safeModule = JSON.parse(JSON.stringify(ModuleWithRelations, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        return NextResponse.json(
-            { success: true, message: 'Module created successfully', data: safeModule },
-            { status: 201 }
+        return createSuccessResponse(
+            serializeBigInt(newModule),
+            'Module created successfully',
+            201
         );
-    } catch (error: any) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ success: false, message: 'Validation failed', errors: error.flatten().fieldErrors }, { status: 422 });
-        }
-        return NextResponse.json(
-            { success: false, message: 'Failed to create module', error: error.message },
-            { status: 500 }
-        );
+    } catch (error) {
+        return handleApiError(error);
     }
 }

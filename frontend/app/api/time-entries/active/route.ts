@@ -1,14 +1,11 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { requireAuth } from '@/lib/auth-utils';
+import { handleApiError, createSuccessResponse, createErrorResponse } from '@/lib/api-errors';
+import { serializeBigInt } from '@/lib/bigint-utils';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
-            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-        }
+        const session = await requireAuth();
 
         const activeTimer = await prisma.time_entries.findFirst({
             where: {
@@ -16,22 +13,28 @@ export async function GET(request: Request) {
                 status: 'running'
             },
             include: {
-                task: true,
-                project: true
+                task: {
+                    select: {
+                        task_id: true,
+                        task_name: true,
+                        task_code: true
+                    }
+                },
+                project: {
+                    select: {
+                        project_id: true,
+                        project_name: true,
+                        project_code: true
+                    }
+                }
+            },
+            orderBy: {
+                start_time: 'desc'
             }
         });
 
-        if (!activeTimer) {
-            return NextResponse.json({ success: true, data: null });
-        }
-
-        const safeEntry = JSON.parse(JSON.stringify(activeTimer, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        return NextResponse.json({ success: true, data: safeEntry });
-    } catch (error: any) {
-        console.error("GET /api/time-entries/active Error:", error);
-        return NextResponse.json({ success: false, message: 'Failed to fetch active timer', error: error.message }, { status: 500 });
+        return createSuccessResponse(activeTimer ? serializeBigInt(activeTimer) : null);
+    } catch (error) {
+        return handleApiError(error);
     }
 }

@@ -68,7 +68,7 @@ export default function UsersPage() {
         }
     };
 
-    const getRoleBadgeColor = (roleSlug?: string) => {
+    const getRoleBadgeColor = (roleSlug?: string | null) => {
         const colors: Record<string, string> = {
             'admin': 'bg-red-100 text-red-800',
             'manager': 'bg-purple-100 text-purple-800',
@@ -186,7 +186,7 @@ export default function UsersPage() {
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(userRole?.slug)}`}>
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(userRole?.slug || '')}`}>
                                                         {userRole?.name || 'No Role'}
                                                     </span>
                                                 )}

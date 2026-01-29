@@ -4,10 +4,11 @@ import { prisma } from '@/lib/prisma';
 // GET - Get a specific user
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const userId = params.id;
+        const { id } = await params;
+        const userId = id;
 
         const user = await prisma.users.findUnique({
             where: { id: BigInt(userId) },
@@ -44,10 +45,11 @@ export async function GET(
 // PUT - Update a user (including role assignment)
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const userId = params.id;
+        const { id } = await params;
+        const userId = id;
         const body = await request.json();
         const { name, email, role_id, status } = body;
 
@@ -105,10 +107,11 @@ export async function PUT(
 // DELETE - Delete a user
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const userId = params.id;
+        const { id } = await params;
+        const userId = id;
 
         await prisma.users.delete({
             where: { id: BigInt(userId) },

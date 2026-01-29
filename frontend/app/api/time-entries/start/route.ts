@@ -28,7 +28,15 @@ export async function POST(request: Request) {
         });
 
         if (existingTimer) {
-            return NextResponse.json({ success: false, message: 'You already have a running timer. Please stop it first.' }, { status: 400 });
+            // Auto-stop the existing timer
+            await prisma.time_entries.update({
+                where: { id: existingTimer.id },
+                data: {
+                    end_time: new Date(),
+                    status: 'stopped',
+                    updated_at: new Date()
+                }
+            });
         }
 
         const body = await request.json();

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Task } from '@/types';
+import { useTimeTracking } from '@/hooks/use-time-tracking';
+import { showSuccess, showError } from '@/lib/error-utils';
 
 const TASK_STATUSES = [
     { value: '1', label: 'Created', color: 'bg-blue-100 text-blue-800' },
@@ -26,11 +28,13 @@ export default function TaskDetailsPage() {
     const params = useParams();
     const taskId = params?.id ? parseInt(params.id as string) : null;
 
-    const [task, setTask] = useState<Task | null>(null);
+    const [task, setTask] = useState<Task & { currentUserAssignment?: any } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [newComment, setNewComment] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
+
+    const { activeTimer, startTimer, stopTimer } = useTimeTracking();
 
     useEffect(() => {
         if (taskId) {
@@ -42,7 +46,7 @@ export default function TaskDetailsPage() {
         try {
             setLoading(true);
             const response = await api.get(`/tasks/${taskId}`);
-            setTask(response.data);
+            setTask(response.data.data || response.data);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch task details');
         } finally {
@@ -80,6 +84,46 @@ export default function TaskDetailsPage() {
         }
     };
 
+    const handlePickUp = async () => {
+        if (!taskId) return;
+        try {
+            await api.post(`/tasks/${taskId}/status`, { status: 'picked_up' });
+            showSuccess('Task picked up');
+            await fetchTaskDetails();
+        } catch (err: any) {
+            showError(err.response?.data?.message || 'Failed to pick up task');
+        }
+    };
+
+    const handleStartTask = async () => {
+        if (!taskId || !task) return;
+        try {
+            // 1. Update status to In Progress (2) if not already
+            if (task.status !== '2') {
+                await api.put(`/tasks/${taskId}`, { status: '2' });
+                // Update local state immediately for UI responsiveness
+                setTask(prev => prev ? { ...prev, status: '2' } : null);
+            }
+            // 2. Start Timer
+            await startTimer(taskId, undefined, `Working on ${task.task_name}`);
+            await fetchTaskDetails();
+        } catch (err: any) {
+            showError(err.message || 'Failed to start task');
+        }
+    };
+
+    const handlePauseTask = async () => {
+        await stopTimer();
+        // Optional: set status to something else? Keeping it 'In Progress' is usually standard until 'Completed'.
+    };
+
+    const isAssignedToMe = task?.currentUserAssignment !== undefined;
+    const isPendingAcceptance = task?.currentUserAssignment?.acceptance_status === 'pending';
+    const isAccepted = task?.currentUserAssignment?.acceptance_status === 'accepted';
+    const isTimerRunningForThisTask =
+        (activeTimer?.task?.task_id && String(activeTimer.task.task_id) === String(taskId)) ||
+        (activeTimer?.task_id && String(activeTimer.task_id) === String(taskId));
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -114,17 +158,63 @@ export default function TaskDetailsPage() {
                     <Link href="/tasks" className="text-blue-600 hover:text-blue-700 text-sm mb-1 block">
                         ← Back to Tasks
                     </Link>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">{task.task_name}</h1>
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-2xl font-bold text-gray-900">{task.task_name}</h1>
+                                {isTimerRunningForThisTask && (
+                                    <span className="animate-pulse inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        ● Recording Time
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-sm text-gray-500 mt-1">Task Code: {task.task_code}</p>
                         </div>
-                        <Link
-                            href={`/tasks/${taskId}/edit`}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
-                        >
-                            Edit Task
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            {isAssignedToMe && isPendingAcceptance && (
+                                <button
+                                    onClick={handlePickUp}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Pick Up Task
+                                </button>
+                            )}
+
+                            {isAssignedToMe && isAccepted && !isTimerRunningForThisTask && (
+                                <button
+                                    onClick={handleStartTask}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Start Task
+                                </button>
+                            )}
+
+                            {isTimerRunningForThisTask && (
+                                <button
+                                    onClick={handlePauseTask}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Pause Task
+                                </button>
+                            )}
+
+                            <Link
+                                href={`/tasks/${taskId}/edit`}
+                                className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition"
+                            >
+                                Edit
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -140,7 +230,7 @@ export default function TaskDetailsPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-sm font-medium text-gray-500">Description</label>
-                                    <p className="mt-1 text-gray-900">{task.task_description || 'No description provided'}</p>
+                                    <p className="mt-1 text-gray-900">{task.description || task.task_description || 'No description provided'}</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -162,13 +252,13 @@ export default function TaskDetailsPage() {
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">Start Date</label>
                                         <p className="mt-1 text-gray-900">
-                                            {task.start_date ? new Date(task.start_date).toLocaleDateString() : '-'}
+                                            {safeDate(task.start_date)}
                                         </p>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-500">End Date</label>
                                         <p className="mt-1 text-gray-900">
-                                            {task.end_date ? new Date(task.end_date).toLocaleDateString() : '-'}
+                                            {safeDate(task.end_date)}
                                         </p>
                                     </div>
                                 </div>
@@ -248,11 +338,11 @@ export default function TaskDetailsPage() {
                             <div className="space-y-3 text-sm">
                                 <div>
                                     <span className="text-gray-500">Created:</span>
-                                    <p className="text-gray-900">{new Date(task.created_at).toLocaleString()}</p>
+                                    <p className="text-gray-900">{safeDate(task.created_at)}</p>
                                 </div>
                                 <div>
                                     <span className="text-gray-500">Last Updated:</span>
-                                    <p className="text-gray-900">{new Date(task.updated_at).toLocaleString()}</p>
+                                    <p className="text-gray-900">{safeDate(task.updated_at)}</p>
                                 </div>
                             </div>
                         </div>
@@ -261,4 +351,14 @@ export default function TaskDetailsPage() {
             </main>
         </div>
     );
+}
+// Add helper to safer date parsing
+function safeDate(date: any) {
+    if (!date) return '-';
+    try {
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
+    } catch {
+        return '-';
+    }
 }

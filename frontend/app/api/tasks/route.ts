@@ -51,6 +51,13 @@ export async function GET(request: Request) {
                 assigned_user: {
                     select: { id: true, name: true, email: true }
                 },
+                assignments: {
+                    include: {
+                        assigned_employee: true
+                    },
+                    orderBy: { created_at: 'desc' },
+                    take: 1
+                },
                 attachments: true
             },
             orderBy: { created_at: 'desc' },
@@ -61,8 +68,23 @@ export async function GET(request: Request) {
             const taskObj = JSON.parse(JSON.stringify(task, (key, value) =>
                 typeof value === 'bigint' ? value.toString() : value
             ));
+
+            // Fallback for assigned_user if null but assignment exists
+            let displayUser = taskObj.assigned_user;
+            if (!displayUser && taskObj.assignments && taskObj.assignments.length > 0) {
+                const latestAssignment = taskObj.assignments[0];
+                if (latestAssignment.assigned_employee) {
+                    displayUser = {
+                        id: 0, // Placeholder ID
+                        name: `${latestAssignment.assigned_employee.first_name} ${latestAssignment.assigned_employee.last_name}`,
+                        email: latestAssignment.assigned_employee.email || '',
+                    };
+                }
+            }
+
             return {
                 ...taskObj,
+                assigned_user: displayUser,
                 priority: taskObj.task_priority,
                 status: taskObj.status || '1' // Default to '1' (Created) if field missing
             };
@@ -147,37 +169,92 @@ export async function POST(request: Request) {
             },
         });
 
-        // Create Notification if assigned
-        if (assignedToUserId) {
-            try {
-                const notificationData = {
-                    title: 'New Task Assigned',
-                    message: `You have been assigned a new task: ${newTask.task_name} (${newTask.task_code})`,
-                    link: `/tasks/${newTask.task_id}/details`,
-                    type: 'task_assignment',
-                    reference_id: newTask.task_id.toString(),
-                    reference_type: 'task'
-                };
+        // Create Notifications
+        try {
+            const notificationsToCreate = [];
+            const notificationBaseData = {
+                title: 'New Task Created',
+                message: `New task created: ${newTask.task_name} (${newTask.task_code || 'No Code'})`,
+                link: `/tasks/${newTask.task_id}/details`,
+                type: 'task_creation',
+                reference_id: newTask.task_id.toString(),
+                reference_type: 'task'
+            };
 
-                await prisma.notifications.create({
+            // 1. Notify Assigned User (if any)
+            if (assignedToUserId) {
+                notificationsToCreate.push({
+                    id: crypto.randomUUID(),
+                    type: 'task_assignment', // Specific type for assignee
+                    notifiable_type: 'User',
+                    notifiable_id: assignedToUserId,
+                    data: JSON.stringify({
+                        ...notificationBaseData,
+                        title: 'New Task Assigned',
+                        message: `You have been assigned a new task: ${newTask.task_name} (${newTask.task_code || 'No Code'})`,
+                        type: 'task_assignment', // Update data type too
+                    }),
+                    created_at: new Date(),
+                    updated_at: new Date()
+                });
+            }
+
+            // 2. Notify Admins (role_id = 1)
+            const adminUsers = await prisma.users.findMany({
+                where: {
+                    role_id: 1, // Assuming Role ID 1 is Admin
+                    // Avoid notifying the assigned user twice if they are also an admin
+                    id: assignedToUserId ? { not: assignedToUserId } : undefined
+                },
+                select: { id: true }
+            });
+
+            for (const admin of adminUsers) {
+                notificationsToCreate.push({
+                    id: crypto.randomUUID(),
+                    type: 'task_creation',
+                    notifiable_type: 'User',
+                    notifiable_id: admin.id,
+                    data: JSON.stringify(notificationBaseData),
+                    created_at: new Date(),
+                    updated_at: new Date()
+                });
+            }
+
+            if (notificationsToCreate.length > 0) {
+                await prisma.notifications.createMany({
+                    data: notificationsToCreate
+                });
+            }
+
+        } catch (notifyError) {
+            console.error("Failed to create notifications:", notifyError);
+            // Don't fail the request if notification fails
+        }
+
+        // Create TaskAssignment for tracking history and fallback display
+        if (assignedToUserId) {
+            // We need the employee_id again for null safety if we only resolved the User ID
+            // Ideally we find the employee record for this User if we don't have it
+            let employeeIdForAssignment = validated.assigned_employee_id || validated.assigned_to;
+
+            // If we resolved a User ID but don't have explicit employee ID (rare if coming from form),
+            // we might miss it, but standard flow sends employee_id usually.
+
+            if (employeeIdForAssignment) {
+                await prisma.taskassignments.create({
                     data: {
-                        id: crypto.randomUUID(),
-                        type: 'task_assignment',
-                        notifiable_type: 'User',
-                        notifiable_id: assignedToUserId,
-                        data: JSON.stringify(notificationData),
+                        task_id: newTask.task_id,
+                        assigned_employee_id: BigInt(employeeIdForAssignment),
+                        status: 1, // Created/Assigned
+                        // assigned_by removed as it doesn't exist in taskassignments schema
+                        completed_datetime: new Date(0), // Placeholder for mandatory field
                         created_at: new Date(),
                         updated_at: new Date()
                     }
                 });
-            } catch (notifyError) {
-                console.error("Failed to create notification:", notifyError);
-                // Don't fail the request if notification fails
             }
         }
-
-        // If assigned to a user, create a TaskAssignment (if logic dictates)
-        // For now, mirroring simple creation. Can extend to create taskassignments entry if needed.
 
         const safeTask = JSON.parse(JSON.stringify(newTask, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

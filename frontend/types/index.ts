@@ -88,6 +88,7 @@ export interface Task {
         email: string;
         avatar?: string;
     };
+    assignments?: TaskAssignment[];
     created_at: string;
     updated_at: string;
 }
@@ -108,6 +109,19 @@ export interface TaskAssignment {
     updated_at: string;
 }
 
+
+
+export interface MainProject {
+    id: number;
+    name: string;
+    code?: string;
+    description?: string;
+    status: string;
+    projects?: Project[];
+    created_at?: string;
+    updated_at?: string;
+}
+
 // Project Types
 export interface Project {
     project_id: number;
@@ -123,6 +137,8 @@ export interface Project {
     supervised_by?: Employee | number;
     developers?: Employee[] | number[];
     support_team?: Employee[] | number[];
+    main_project_id?: number;
+    main_project?: MainProject;
     created_at: string;
     updated_at: string;
 }
@@ -178,13 +194,13 @@ export interface PaginatedResponse<T> {
 
 // Time Entry Types
 export interface TimeEntry {
-    id: number;
-    user_id: number;
+    id: number | string;
+    user_id: number | string;
     task_id?: number;
     project_id?: number;
     description?: string;
     start_time: string;
-    end_time?: string;
+    end_time?: string | null;
     duration?: number;
     is_billable: boolean;
     hourly_rate?: number;
