@@ -20,6 +20,13 @@ export default function ProjectsPage() {
     const [newMainProjectName, setNewMainProjectName] = useState('');
     const [creatingMain, setCreatingMain] = useState(false);
 
+    // Edit Main Project Modal State
+    const [isEditMainProjectModalOpen, setIsEditMainProjectModalOpen] = useState(false);
+    const [editingMainProject, setEditingMainProject] = useState<MainProject | null>(null);
+    const [editMainProjectName, setEditMainProjectName] = useState('');
+    const [editMainProjectStatus, setEditMainProjectStatus] = useState('');
+    const [updatingMain, setUpdatingMain] = useState(false);
+
     useEffect(() => {
         fetchMainProjects();
     }, []);
@@ -64,6 +71,52 @@ export default function ProjectsPage() {
             toast.error(error.response?.data?.message || 'Failed to create main project');
         } finally {
             setCreatingMain(false);
+        }
+    };
+
+    const handleEditMainProject = (mp: MainProject) => {
+        setEditingMainProject(mp);
+        setEditMainProjectName(mp.name);
+        setEditMainProjectStatus(mp.status);
+        setIsEditMainProjectModalOpen(true);
+    };
+
+    const handleUpdateMainProject = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingMainProject) return;
+
+        setUpdatingMain(true);
+        try {
+            const res = await api.put(`/main-projects/${editingMainProject.id}`, {
+                name: editMainProjectName,
+                status: editMainProjectStatus
+            });
+
+            if (res.data.success) {
+                toast.success('Product Line updated successfully');
+                setIsEditMainProjectModalOpen(false);
+                setEditingMainProject(null);
+                fetchMainProjects();
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update product line');
+        } finally {
+            setUpdatingMain(false);
+        }
+    };
+
+    const handleDeleteMainProject = async (id: number, name: string) => {
+        if (!confirm(`Delete product line "${name}"? This will also remove all associated deployments.`)) return;
+
+        try {
+            const res = await api.delete(`/main-projects/${id}`);
+            if (res.data.success) {
+                toast.success('Product Line deleted successfully');
+                fetchMainProjects();
+                refetchProjects();
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to delete product line');
         }
     };
 
@@ -186,9 +239,31 @@ export default function ProjectsPage() {
                                                 <p className="text-xs text-slate-500">{mp.projects?.length || 0} deployments</p>
                                             </div>
                                         </div>
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusStyle(mp.status)}`}>
-                                            {mp.status}
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusStyle(mp.status)}`}>
+                                                {mp.status}
+                                            </span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleEditMainProject(mp)}
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Edit Product Line"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteMainProject(mp.id, mp.name)}
+                                                    className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    title="Delete Product Line"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {filteredProjects.length > 0 ? (
@@ -339,6 +414,61 @@ export default function ProjectsPage() {
                                         className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-70"
                                     >
                                         {creatingMain ? 'Creating...' : 'Create Product'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Main Project Modal */}
+                {isEditMainProjectModalOpen && editingMainProject && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                            <h2 className="text-xl font-bold text-slate-800 mb-4">Edit Product Line</h2>
+                            <form onSubmit={handleUpdateMainProject}>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editMainProjectName}
+                                            onChange={e => setEditMainProjectName(e.target.value)}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                            placeholder="e.g. ERP System v2"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                                        <select
+                                            value={editMainProjectStatus}
+                                            onChange={e => setEditMainProjectStatus(e.target.value)}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="on_hold">On Hold</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-3 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsEditMainProjectModalOpen(false);
+                                            setEditingMainProject(null);
+                                        }}
+                                        className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={updatingMain}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-70"
+                                    >
+                                        {updatingMain ? 'Updating...' : 'Update Product'}
                                     </button>
                                 </div>
                             </form>

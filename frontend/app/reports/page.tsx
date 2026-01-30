@@ -90,17 +90,16 @@ export default function ReportsPage() {
     return (
         <Sidebar>
             <div className="p-6 lg:p-8 space-y-8 min-h-screen font-sans">
-                {/* --- HERO SECTION --- */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900 to-teal-900 p-10 shadow-2xl text-white">
-                    {/* Abstract Shapes */}
-                    <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl"></div>
-
-                    <div className="relative z-10">
-                        <h1 className="text-4xl lg:text-5xl font-bold mb-3 tracking-tight">Analytics & Reports</h1>
-                        <p className="text-emerald-100/80 text-lg max-w-2xl">
-                            Generate detailed insights on team performance, project progress, and daily activities.
-                        </p>
+                {/* Header */}
+                <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Analytics & Reports</h1>
+                        <p className="text-slate-500 mt-0.5">Generate detailed insights and performance reports</p>
                     </div>
                 </div>
 
@@ -109,7 +108,7 @@ export default function ReportsPage() {
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-white rounded-3xl shadow-xl border border-slate-100/60 p-6">
                             <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                                <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                                 Report Configuration
                             </h2>
 
@@ -121,7 +120,7 @@ export default function ReportsPage() {
                                         setFilters(prev => ({ ...prev, start_date: today, end_date: today }));
                                     }}
                                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'daily'
-                                        ? 'bg-white text-emerald-600 shadow-sm'
+                                        ? 'bg-white text-violet-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
@@ -130,7 +129,7 @@ export default function ReportsPage() {
                                 <button
                                     onClick={() => setReportType('tasks')}
                                     className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'tasks'
-                                        ? 'bg-white text-emerald-600 shadow-sm'
+                                        ? 'bg-white text-violet-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
@@ -147,18 +146,20 @@ export default function ReportsPage() {
                                             type="date"
                                             value={filters.start_date}
                                             onChange={(e) => setFilters({ ...filters, start_date: e.target.value, end_date: e.target.value })}
-                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                            style={{ minWidth: '140px' }}
                                         />
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Start Date</label>
                                             <input
                                                 type="date"
                                                 value={filters.start_date}
                                                 onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                                className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                                style={{ minWidth: '140px' }}
                                             />
                                         </div>
                                         <div>
@@ -167,7 +168,8 @@ export default function ReportsPage() {
                                                 type="date"
                                                 value={filters.end_date}
                                                 onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                                className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                                style={{ minWidth: '140px' }}
                                             />
                                         </div>
                                     </div>
@@ -223,7 +225,7 @@ export default function ReportsPage() {
                                 <button
                                     onClick={handleGenerateReport}
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {loading ? (
                                         <><LoadingSpinner /> Processing...</>
@@ -251,7 +253,7 @@ export default function ReportsPage() {
                                         <div className="flex items-center bg-slate-100 rounded-lg p-1">
                                             <button
                                                 onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.1))}
-                                                className="p-1.5 hover:bg-white hover:text-emerald-600 rounded-md text-slate-500 transition-all"
+                                                className="p-1.5 hover:bg-white hover:text-violet-600 rounded-md text-slate-500 transition-all"
                                                 title="Zoom Out"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
@@ -288,7 +290,7 @@ export default function ReportsPage() {
                                         <button
                                             onClick={handleExcelExport}
                                             disabled={loading}
-                                            className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+                                            className="px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
                                         >
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                             Excel
