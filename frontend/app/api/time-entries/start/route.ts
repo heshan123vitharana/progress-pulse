@@ -60,7 +60,24 @@ export async function POST(request: Request) {
             }
         });
 
-        // If task_id is present, optionally update task status or log activity here (skipping for now to stick to core requirement)
+        // If task is completed or in QA, automatically change status back to "In Progress"
+        if (validated.task_id) {
+            const task = await prisma.tasks.findUnique({
+                where: { task_id: BigInt(validated.task_id) },
+                select: { status: true }
+            });
+
+            // Status codes: '2' = In Progress, '3' = QA, '5' = Completed
+            if (task && (task.status === '3' || task.status === '5')) {
+                await prisma.tasks.update({
+                    where: { task_id: BigInt(validated.task_id) },
+                    data: {
+                        status: '2', // In Progress
+                        updated_at: new Date()
+                    }
+                });
+            }
+        }
 
         const safeEntry = JSON.parse(JSON.stringify(entry, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

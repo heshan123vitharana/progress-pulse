@@ -163,7 +163,7 @@ export default function TimesheetPage() {
         setCompletingGroup(group);
     };
 
-    const confirmComplete = async (sendToQA: boolean) => {
+    const confirmComplete = async (statusChoice: 'qa' | 'test' | 'complete') => {
         if (!completingGroup || !completingGroup.task) return;
 
         setLoadingAction(true);
@@ -171,10 +171,12 @@ export default function TimesheetPage() {
             if (completingGroup.isRunning) {
                 await stopTimer();
             }
-            const newStatus = sendToQA ? '3' : '5';
+            // Map choices to new status codes
+            const newStatus = statusChoice === 'qa' ? '4' : statusChoice === 'test' ? '7' : '8';
             await api.put(`/tasks/${completingGroup.task.task_id}`, { status: newStatus });
 
-            showSuccess(`Task marked as ${sendToQA ? 'In QA' : 'Completed'}`);
+            const statusLabel = statusChoice === 'qa' ? 'In-QA' : statusChoice === 'test' ? 'In-Test Server' : 'Completed';
+            showSuccess(`Task marked as ${statusLabel}`);
             setCompletingGroup(null);
             await refetchTime();
         } catch (err: any) {
@@ -185,15 +187,127 @@ export default function TimesheetPage() {
     };
 
     const formatDuration = (seconds?: number) => {
-        if (!seconds) return '0h 0m';
+        if (!seconds || isNaN(seconds) || seconds < 0) return '0h 0m';
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        return `${h}h ${m}m`;
+        const s = Math.floor(seconds % 60);
+        return `${h}h ${m}m ${s}s`;
     };
+
+    // Calculate stats for dashboard cards
+    const todayEntries = useMemo(() => {
+        const today = new Date().toISOString().split('T')[0];
+        return timeEntries.filter(entry => {
+            if (!entry.start_time) return false;
+            const entryDate = new Date(entry.start_time);
+            if (!isValidDate(entryDate)) return false;
+            return entryDate.toISOString().split('T')[0] === today;
+        });
+    }, [timeEntries]);
+
+    const stats = useMemo(() => {
+        const totalSeconds = todayEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
+        const completedTasks = new Set(todayEntries.filter(e => e.task_id).map(e => e.task_id)).size;
+        const billableSeconds = todayEntries.filter(e => e.is_billable).reduce((sum, e) => sum + (e.duration || 0), 0);
+
+        return {
+            totalHours: (totalSeconds / 3600).toFixed(1),
+            activeTimer: activeTimer ? 'Running' : 'Stopped',
+            completedTasks,
+            billableHours: (billableSeconds / 3600).toFixed(1)
+        };
+    }, [todayEntries, activeTimer]);
+
+    const statCards = [
+        {
+            name: 'Total Hours Today',
+            value: `${stats.totalHours}h`,
+            icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            gradient: 'from-blue-500 to-cyan-500',
+            bgGradient: 'from-blue-500/10 to-cyan-500/10',
+            iconBg: 'bg-blue-500/20',
+            textColor: 'text-blue-600'
+        },
+        {
+            name: 'Active Timer',
+            value: stats.activeTimer,
+            icon: stats.activeTimer === 'Running' ? 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z' : 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            gradient: stats.activeTimer === 'Running' ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
+            bgGradient: stats.activeTimer === 'Running' ? 'from-amber-500/10 to-orange-500/10' : 'from-slate-400/10 to-slate-500/10',
+            iconBg: stats.activeTimer === 'Running' ? 'bg-amber-500/20' : 'bg-slate-400/20',
+            textColor: stats.activeTimer === 'Running' ? 'text-amber-600' : 'text-slate-600'
+        },
+        {
+            name: 'Completed Tasks',
+            value: stats.completedTasks,
+            icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+            gradient: 'from-emerald-500 to-teal-500',
+            bgGradient: 'from-emerald-500/10 to-teal-500/10',
+            iconBg: 'bg-emerald-500/20',
+            textColor: 'text-emerald-600'
+        },
+        {
+            name: 'Billable Hours',
+            value: `${stats.billableHours}h`,
+            icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+            gradient: 'from-violet-500 to-purple-500',
+            bgGradient: 'from-violet-500/10 to-purple-500/10',
+            iconBg: 'bg-violet-500/20',
+            textColor: 'text-violet-600'
+        }
+    ];
 
     return (
         <Sidebar>
-            <div className="p-6 lg:p-8 space-y-8">
+            <div className="p-6 lg:p-8">
+                {/* Dashboard-style Header */}
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+                    <div>
+                        <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl lg:text-3xl font-bold text-slate-800">Timesheet</h1>
+                                <p className="text-slate-500 mt-0.5">Track your time and manage tasks</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid - Dashboard Style */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                    {statCards.map((stat, index) => (
+                        <div
+                            key={stat.name}
+                            className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-white/50 group cursor-pointer`}
+                            style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                            {/* Decorative gradient border */}
+                            <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.gradient}`}></div>
+
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-600">{stat.name}</p>
+                                    <p className={`text-4xl font-bold mt-2 ${stat.textColor}`}>
+                                        {stat.value}
+                                    </p>
+                                </div>
+                                <div className={`p-3 rounded-xl ${stat.iconBg} group-hover:scale-110 transition-transform`}>
+                                    <svg className={`w-7 h-7 ${stat.textColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {/* Decorative circle */}
+                            <div className={`absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${stat.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+                        </div>
+                    ))}
+                </div>
+
                 {/* --- HERO SECTION: Active Work --- */}
                 {activeGroup ? (
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E293B] to-[#0F172A] p-8 shadow-2xl text-white">
@@ -244,24 +358,7 @@ export default function TimesheetPage() {
                             </div>
                         </div>
                     </div>
-                ) : (
-                    /* Passive Header when idle */
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Daily Timesheet</h1>
-                            <p className="text-slate-500 mt-1">Select a task below to start working.</p>
-                        </div>
-                        <button
-                            onClick={() => setShowForm(!showForm)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl shadow-sm hover:bg-slate-50 transition-all"
-                        >
-                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Manual Entry
-                        </button>
-                    </div>
-                )}
+                ) : null}
 
                 {/* Manual Form Toggle */}
                 {showForm && (
@@ -321,7 +418,8 @@ export default function TimesheetPage() {
                             </div>
                         </form>
                     </div>
-                )}
+                )
+                }
 
                 {/* --- ACTIVITY LIST --- */}
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
@@ -389,7 +487,7 @@ export default function TimesheetPage() {
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wide">
-                                                        Idling
+                                                        Paused
                                                     </span>
                                                 )}
                                             </td>
@@ -433,52 +531,63 @@ export default function TimesheetPage() {
                 </div>
 
                 {/* QA Confirmation Modal */}
-                {completingGroup && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-white/50">
-                            <div className="p-8 text-center">
-                                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                </div>
-                                <h3 className="text-2xl font-bold text-slate-800 mb-2">Task Completed!</h3>
-                                <p className="text-slate-500 mb-8">
-                                    Great work on <strong>{completingGroup.task?.task_name}</strong>.<br />
-                                    What would you like to do next?
-                                </p>
+                {
+                    completingGroup && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-white/50">
+                                <div className="p-8 text-center">
+                                    <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-800 mb-2">Task Completed!</h3>
+                                    <p className="text-slate-500 mb-8">
+                                        Great work on <strong>{completingGroup.task?.task_name}</strong>.<br />
+                                        What would you like to do next?
+                                    </p>
 
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={() => confirmComplete(true)}
-                                        disabled={loadingAction}
-                                        className="w-full py-3.5 px-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-violet-200 flex items-center justify-center gap-2"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                        Submit for QA Review
-                                    </button>
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => confirmComplete('qa')}
+                                            disabled={loadingAction}
+                                            className="w-full py-3.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                                            Submit for QA Review
+                                        </button>
 
-                                    <button
-                                        onClick={() => confirmComplete(false)}
-                                        disabled={loadingAction}
-                                        className="w-full py-3.5 px-4 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                        Mark as Done (No QA)
-                                    </button>
+                                        <button
+                                            onClick={() => confirmComplete('test')}
+                                            disabled={loadingAction}
+                                            className="w-full py-3.5 px-4 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-cyan-200 flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                            Deploy to Test Server
+                                        </button>
 
-                                    <button
-                                        onClick={() => setCompletingGroup(null)}
-                                        disabled={loadingAction}
-                                        className="mt-4 text-sm text-slate-400 hover:text-slate-600 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
+                                        <button
+                                            onClick={() => confirmComplete('complete')}
+                                            disabled={loadingAction}
+                                            className="w-full py-3.5 px-4 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                            Mark as Completed
+                                        </button>
+
+                                        <button
+                                            onClick={() => setCompletingGroup(null)}
+                                            disabled={loadingAction}
+                                            className="mt-4 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </Sidebar>
+                    )
+                }
+            </div >
+        </Sidebar >
     );
 }
 

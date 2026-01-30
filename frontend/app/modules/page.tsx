@@ -64,10 +64,16 @@ export default function ModulesPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Convert project_id to number before sending to API
+            const payload = {
+                ...formData,
+                project_id: parseInt(formData.project_id)
+            };
+
             if (editingModule) {
-                await api.put(`/modules/${editingModule.id}`, formData);
+                await api.put(`/modules/${editingModule.id}`, payload);
             } else {
-                await api.post('/modules', formData);
+                await api.post('/modules', payload);
             }
             setShowModal(false);
             resetForm();

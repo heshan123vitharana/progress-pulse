@@ -16,11 +16,14 @@ export default function AnalyticsPage() {
 
     // Task Status Distribution
     const taskStatusData = [
-        { name: 'Created', value: tasks.filter(t => t.status === '1').length },
-        { name: 'In Progress', value: tasks.filter(t => t.status === '2').length },
-        { name: 'QA', value: tasks.filter(t => t.status === '3').length },
-        { name: 'Completed', value: tasks.filter(t => t.status === '5').length },
-        { name: 'Closed', value: tasks.filter(t => t.status === '6').length },
+        { name: 'Assigned', value: tasks.filter(t => t.status === '1').length },
+        { name: 'Accept', value: tasks.filter(t => t.status === '2').length },
+        { name: 'In-Progress', value: tasks.filter(t => t.status === '3').length },
+        { name: 'In-QA', value: tasks.filter(t => t.status === '4').length },
+        { name: 'QA-In-Progress', value: tasks.filter(t => t.status === '5').length },
+        { name: 'In-Repeating', value: tasks.filter(t => t.status === '6').length },
+        { name: 'In-Test Server', value: tasks.filter(t => t.status === '7').length },
+        { name: 'Completed', value: tasks.filter(t => t.status === '8').length },
     ].filter(item => item.value > 0);
 
     // Task Completion Trend (Last 7 days)
@@ -95,7 +98,7 @@ export default function AnalyticsPage() {
                     <div className="bg-white rounded-lg shadow p-6">
                         <p className="text-sm text-gray-600">Completion Rate</p>
                         <p className="text-3xl font-bold text-orange-600">
-                            {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === '5').length / tasks.length) * 100) : 0}%
+                            {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === '8').length / tasks.length) * 100) : 0}%
                         </p>
                     </div>
                 </div>

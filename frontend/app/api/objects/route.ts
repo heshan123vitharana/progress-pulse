@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
         console.log('[API] GET /api/objects - params:', { moduleId });
 
-        let whereClause = {};
+        let whereClause: any = {};
         if (moduleId) {
             if (!/^\d+$/.test(moduleId)) {
                 console.error('[API] Invalid module_id:', moduleId);
@@ -25,22 +25,47 @@ export async function GET(request: Request) {
             whereClause = { module_id: BigInt(moduleId) };
         }
 
+        console.log('[API] Fetching objects with whereClause:', whereClause);
+
+        // First try without relations to isolate the issue
         const objects = await prisma.objects.findMany({
             where: whereClause,
-            include: {
-                module: true,
-                sub_objects: true,
-            },
             orderBy: { created_at: 'desc' },
         });
 
-        const safeObjects = JSON.parse(JSON.stringify(objects, (key, value) =>
+        console.log('[API] Found objects:', objects.length);
+
+        // Then fetch modules separately to avoid relation errors
+        const objectsWithModules = await Promise.all(
+            objects.map(async (obj) => {
+                try {
+                    const module = await prisma.modules.findUnique({
+                        where: { id: obj.module_id },
+                        select: {
+                            id: true,
+                            module_name: true,
+                            project_id: true,
+                        }
+                    });
+                    return { ...obj, module };
+                } catch (err) {
+                    console.error('[API] Error fetching module for object:', obj.id, err);
+                    return { ...obj, module: null };
+                }
+            })
+        );
+
+        const safeObjects = JSON.parse(JSON.stringify(objectsWithModules, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
         ));
 
+        console.log('[API] Returning', safeObjects.length, 'objects');
         return NextResponse.json({ success: true, data: safeObjects });
     } catch (error: any) {
         console.error('[API] Error in GET /api/objects:', error);
+        console.error('[API] Error name:', error.name);
+        console.error('[API] Error message:', error.message);
+        console.error('[API] Error stack:', error.stack);
         return NextResponse.json(
             { success: false, message: 'Failed to fetch objects', error: error.message, details: String(error) },
             { status: 500 }
@@ -75,7 +100,15 @@ export async function POST(request: Request) {
 
         const ObjectWithRelations = await prisma.objects.findUnique({
             where: { id: newObject.id },
-            include: { module: true, sub_objects: true }
+            include: {
+                module: {
+                    select: {
+                        id: true,
+                        module_name: true,
+                        project_id: true,
+                    }
+                }
+            }
         });
 
         const safeObject = JSON.parse(JSON.stringify(ObjectWithRelations, (key, value) =>

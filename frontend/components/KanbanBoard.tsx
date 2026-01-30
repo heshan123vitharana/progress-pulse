@@ -13,12 +13,14 @@ interface KanbanBoardProps {
 }
 
 const STATUSES = [
-    { id: '1', label: 'Created', color: 'from-slate-500 to-slate-600', bgColor: 'bg-slate-50', borderColor: 'border-slate-200' },
-    { id: '2', label: 'In Progress', color: 'from-blue-500 to-cyan-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
-    { id: '3', label: 'QA', color: 'from-violet-500 to-purple-600', bgColor: 'bg-violet-50', borderColor: 'border-violet-200' },
-    { id: '4', label: 'Repeat', color: 'from-amber-500 to-orange-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
-    { id: '5', label: 'Completed', color: 'from-emerald-500 to-teal-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-    { id: '6', label: 'Closed', color: 'from-slate-400 to-slate-500', bgColor: 'bg-slate-100', borderColor: 'border-slate-300' },
+    { id: '1', label: 'Assigned', color: 'from-slate-500 to-slate-600', bgColor: 'bg-slate-50', borderColor: 'border-slate-200' },
+    { id: '2', label: 'Accept', color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+    { id: '3', label: 'In-Progress', color: 'from-yellow-500 to-amber-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+    { id: '4', label: 'In-QA', color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' },
+    { id: '5', label: 'QA-In-Progress', color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200' },
+    { id: '6', label: 'In-Repeating', color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+    { id: '7', label: 'In-Test Server', color: 'from-cyan-500 to-cyan-600', bgColor: 'bg-cyan-50', borderColor: 'border-cyan-200' },
+    { id: '8', label: 'Completed', color: 'from-emerald-500 to-teal-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
 ];
 
 function SortableCard({ task }: { task: Task }) {
