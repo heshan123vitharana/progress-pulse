@@ -14,8 +14,14 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const moduleId = searchParams.get('module_id');
 
+        console.log('[API] GET /api/objects - params:', { moduleId });
+
         let whereClause = {};
         if (moduleId) {
+            if (!/^\d+$/.test(moduleId)) {
+                console.error('[API] Invalid module_id:', moduleId);
+                return NextResponse.json({ success: false, message: 'Invalid module ID' }, { status: 400 });
+            }
             whereClause = { module_id: BigInt(moduleId) };
         }
 
@@ -34,8 +40,9 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ success: true, data: safeObjects });
     } catch (error: any) {
+        console.error('[API] Error in GET /api/objects:', error);
         return NextResponse.json(
-            { success: false, message: 'Failed to fetch objects', error: error.message },
+            { success: false, message: 'Failed to fetch objects', error: error.message, details: String(error) },
             { status: 500 }
         );
     }

@@ -1,0 +1,21 @@
+Starting debug script...
+Fetching objects...
+prisma:query SELECT `limitless_laravel`.`objects`.`id`, `limitless_laravel`.`objects`.`module_id`, `limitless_laravel`.`objects`.`object_name`, `limitless_laravel`.`objects`.`description`, `limitless_laravel`.`objects`.`status`, `limitless_laravel`.`objects`.`created_at`, `limitless_laravel`.`objects`.`updated_at` FROM `limitless_laravel`.`objects` WHERE 1=1 ORDER BY `limitless_laravel`.`objects`.`created_at` DESC
+prisma:query SELECT `limitless_laravel`.`modules`.`id`, `limitless_laravel`.`modules`.`project_id`, `limitless_laravel`.`modules`.`module_name`, `limitless_laravel`.`modules`.`description`, `limitless_laravel`.`modules`.`status`, `limitless_laravel`.`modules`.`created_at`, `limitless_laravel`.`modules`.`updated_at` FROM `limitless_laravel`.`modules` WHERE `limitless_laravel`.`modules`.`id` IN (?)
+prisma:query SELECT `limitless_laravel`.`sub_objects`.`id`, `limitless_laravel`.`sub_objects`.`object_id`, `limitless_laravel`.`sub_objects`.`sub_object_name`, `limitless_laravel`.`sub_objects`.`description`, `limitless_laravel`.`sub_objects`.`status`, `limitless_laravel`.`sub_objects`.`created_at`, `limitless_laravel`.`sub_objects`.`updated_at` FROM `limitless_laravel`.`sub_objects` WHERE `limitless_laravel`.`sub_objects`.`object_id` IN (?)
+DEBUG ERROR: PrismaClientUnknownRequestError: 
+Invalid `prisma.objects.findMany()` invocation in
+C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\debug-objects.ts:8:46
+
+  5 console.log("Starting debug script...");
+  6 try {
+  7     console.log("Fetching objects...");
+→ 8     const objects = await prisma.objects.findMany(
+Inconsistent query result: Field module is required to return data, got `null` instead.
+    at $n.handleRequestError (C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\node_modules\@prisma\client\runtime\library.js:121:7505)
+    at $n.handleAndLogRequestError (C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async main (C:\Users\HESHAN WITHARANA\OneDrive\Desktop\progress_pulse_v2-main\frontend\debug-objects.ts:8:25) {
+  clientVersion: '5.22.0'
+}

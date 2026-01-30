@@ -48,9 +48,13 @@ export default function ReportPreview({ type, data, filters }: ReportPreviewProp
 
             {/* Filter Summary */}
             <div className="bg-slate-50 p-4 rounded-lg mb-8 text-xs text-slate-600 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                    <span className="font-bold block text-slate-800 uppercase">Period</span>
-                    {type === 'daily' ? filters.start_date : `${filters.start_date} - ${filters.end_date}`}
+                <div className="col-span-2">
+                    <span className="font-bold block text-slate-800 uppercase mb-1">Period</span>
+                    <span className="text-red-600 font-semibold text-sm whitespace-nowrap">
+                        {type === 'daily' || filters.start_date === filters.end_date
+                            ? filters.start_date
+                            : `${filters.start_date} to ${filters.end_date}`}
+                    </span>
                 </div>
                 {filters.project_id && (
                     <div>
