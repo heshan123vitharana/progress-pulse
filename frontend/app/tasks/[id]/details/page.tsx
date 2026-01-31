@@ -65,17 +65,6 @@ export default function TaskDetailsPage() {
         }
     };
 
-    const handleStatusChange = async (newStatus: string) => {
-        if (!taskId) return;
-
-        try {
-            await api.put(`/tasks/${taskId}`, { status: newStatus });
-            await fetchTaskDetails();
-        } catch (err: any) {
-            alert(err.response?.data?.message || 'Failed to update status');
-        }
-    };
-
     const handleCommentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newComment.trim() || !taskId) return;
@@ -138,8 +127,8 @@ export default function TaskDetailsPage() {
         );
     }
 
-    const statusObj = TASK_STATUSES.find(s => s.value === task.status);
-    const priorityObj = PRIORITY_LEVELS.find(p => p.value === task.priority);
+    const statusObj = TASK_STATUSES.find(s => String(s.value) === String(task.status));
+    const priorityObj = PRIORITY_LEVELS.find(p => String(p.value) === String(task.priority));
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -282,23 +271,12 @@ export default function TaskDetailsPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Status Card */}
+                        {/* Status Card - Read Only */}
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <h3 className="text-sm font-semibold text-gray-900 mb-3">Status</h3>
-                            <select
-                                value={task.status || ''}
-                                onChange={(e) => handleStatusChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                {TASK_STATUSES.map(status => (
-                                    <option key={status.value} value={status.value}>{status.label}</option>
-                                ))}
-                            </select>
-                            <div className="mt-3">
-                                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${statusObj?.color}`}>
-                                    {statusObj?.label}
-                                </span>
-                            </div>
+                            <span className={`px-3 py-1.5 text-sm font-semibold rounded-full ${statusObj?.color || 'bg-gray-100 text-gray-800'}`}>
+                                {statusObj?.label || 'Unknown'}
+                            </span>
                         </div>
 
                         {/* Priority Card */}
