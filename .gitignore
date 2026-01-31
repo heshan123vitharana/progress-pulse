@@ -32,3 +32,10 @@ yarn-error.log*
 
 # Next.js
 .next/
+
+# Uploads folder (user-uploaded files)
+frontend/public/uploads/
+**/uploads/
+*.exe
+*.msi
+*.dmg
