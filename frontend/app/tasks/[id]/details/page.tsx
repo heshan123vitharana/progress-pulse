@@ -23,6 +23,17 @@ const PRIORITY_LEVELS = [
     { value: 3, label: 'Low', color: 'bg-green-100 text-green-800' },
 ];
 
+// Helper function for safe date parsing
+function safeDate(date: any): string {
+    if (!date) return '-';
+    try {
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
+    } catch {
+        return '-';
+    }
+}
+
 export default function TaskDetailsPage() {
     const router = useRouter();
     const params = useParams();
@@ -229,7 +240,9 @@ export default function TaskDetailsPage() {
 
                                 <div>
                                     <label className="text-sm font-medium text-gray-500">Estimated Hours</label>
-                                    <p className="mt-1 text-gray-900">{task.estimated_hours || '-'} hours</p>
+                                    <p className="mt-1 text-gray-900">
+                                        {task.estimated_hours ? `${task.estimated_hours} hours` : 'Not specified'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -291,9 +304,15 @@ export default function TaskDetailsPage() {
                         {/* Priority Card */}
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <h3 className="text-sm font-semibold text-gray-900 mb-3">Priority</h3>
-                            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${priorityObj?.color}`}>
-                                {priorityObj?.label}
-                            </span>
+                            {priorityObj ? (
+                                <span className={`px-3 py-1 text-sm font-semibold rounded-full ${priorityObj.color}`}>
+                                    {priorityObj.label}
+                                </span>
+                            ) : (
+                                <span className="px-3 py-1 text-sm text-gray-500 bg-gray-100 rounded-full">
+                                    Not Set
+                                </span>
+                            )}
                         </div>
 
                         {/* Metadata Card */}
@@ -315,14 +334,4 @@ export default function TaskDetailsPage() {
             </main>
         </div>
     );
-}
-// Add helper to safer date parsing
-function safeDate(date: any) {
-    if (!date) return '-';
-    try {
-        const d = new Date(date);
-        return isNaN(d.getTime()) ? '-' : d.toLocaleDateString();
-    } catch {
-        return '-';
-    }
 }
