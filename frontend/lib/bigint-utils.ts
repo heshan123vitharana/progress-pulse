@@ -16,6 +16,10 @@ export function serializeBigInt<T>(obj: T): T {
         return String(obj) as T;
     }
 
+    if (obj instanceof Date) {
+        return obj.toISOString() as any;
+    }
+
     if (Array.isArray(obj)) {
         return obj.map(item => serializeBigInt(item)) as T;
     }

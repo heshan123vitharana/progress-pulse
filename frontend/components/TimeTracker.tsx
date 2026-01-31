@@ -36,19 +36,16 @@ export default function TimeTracker({ taskId, projectId }: { taskId?: number; pr
     return (
         <div className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm border">
             <div className="text-2xl font-mono font-bold text-gray-900">{formatTime(elapsed)}</div>
-            {activeTimer ? (
-                <button onClick={handleStop} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <rect x="6" y="6" width="8" height="8" />
-                    </svg>
-                </button>
-            ) : (
-                <button onClick={handleStart} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                    </svg>
-                </button>
-            )}
+            <a
+                href="/timesheet"
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition flex items-center gap-2"
+                title="Manage in Timesheet"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Track in Timesheet
+            </a>
         </div>
     );
 }

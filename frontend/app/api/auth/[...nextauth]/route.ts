@@ -29,6 +29,9 @@ export const authOptions: NextAuthOptions = {
                         where: {
                             email: credentials.email,
                         },
+                        include: {
+                            role: true,
+                        }
                     });
 
                     if (!user) {
@@ -57,6 +60,7 @@ export const authOptions: NextAuthOptions = {
                         name: user.name,
                         employee_id: user.employee_id,
                         role_id: user.role_id ? Number(user.role_id) : null,
+                        role_slug: user.role?.slug || null,
                         avatar: user.avatar,
                     };
                 } catch (error) {
@@ -75,6 +79,7 @@ export const authOptions: NextAuthOptions = {
                     id: token.id,
                     employee_id: token.employee_id,
                     role_id: token.role_id,
+                    role_slug: token.role_slug,
                     avatar: token.avatar,
                 },
             };
@@ -90,6 +95,7 @@ export const authOptions: NextAuthOptions = {
                     id: u.id,
                     employee_id: u.employee_id,
                     role_id: u.role_id,
+                    role_slug: u.role_slug,
                     avatar: u.avatar,
                 };
             }

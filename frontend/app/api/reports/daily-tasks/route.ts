@@ -1,16 +1,46 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(request: Request) {
     try {
+        const session = await getServerSession(authOptions);
+
+        if (!session?.user) {
+            return NextResponse.json(
+                { message: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
         const start_date = searchParams.get('start_date');
         const end_date = searchParams.get('end_date');
-        const employee_id = searchParams.get('employee_id');
+        let employee_id = searchParams.get('employee_id');
         const project_id = searchParams.get('project_id');
         const status = searchParams.get('status');
 
         const whereClause: any = {};
+
+        // Security Check: If user is not admin, force employee_id to be their own
+        const isRestricted = session.user.role_slug !== 'admin';
+
+        if (isRestricted) {
+            if (!session.user.employee_id) {
+                return NextResponse.json(
+                    { message: 'Employee ID not found for user' },
+                    { status: 403 }
+                );
+            }
+            // Override/Force the employee_id filter
+            whereClause.assigned_to = session.user.employee_id;
+        } else {
+            // Admin can filter by any employee
+            if (employee_id) {
+                whereClause.assigned_to = parseInt(employee_id);
+            }
+        }
 
         // Date filter
         if (start_date && end_date) {
@@ -23,11 +53,6 @@ export async function GET(request: Request) {
                 gte: new Date(start_date),
                 lte: new Date(new Date(start_date).setHours(23, 59, 59)),
             };
-        }
-
-        // Employee filter
-        if (employee_id) {
-            whereClause.assigned_to = parseInt(employee_id);
         }
 
         // Project filter
@@ -75,6 +100,7 @@ export async function GET(request: Request) {
             priority: task.task_priority,
             description: task.description,
             created_at: task.created_at,
+            billable_hours: (task.total_time_seconds / 3600).toFixed(2),
         }));
 
         return NextResponse.json(reportData);

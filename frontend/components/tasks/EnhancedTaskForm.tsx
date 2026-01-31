@@ -421,6 +421,11 @@ export default function EnhancedTaskForm({ onSuccess, onCancel, taskId, initialD
                     <label className="block text-gray-700 mb-2">Due Date</label>
                     <input
                         type="date"
+                        min={(() => {
+                            const d = new Date();
+                            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                            return d.toISOString().split('T')[0];
+                        })()}
                         value={formData.due_date}
                         onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                         className="w-full border rounded px-3 py-2 text-gray-900 bg-white"

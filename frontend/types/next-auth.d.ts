@@ -6,6 +6,7 @@ declare module "next-auth" {
             id: string;
             employee_id?: number | null;
             role_id?: number | null;
+            role_slug?: string | null;
             name?: string | null;
             email?: string | null;
             image?: string | null;
@@ -17,6 +18,7 @@ declare module "next-auth" {
         id: string;
         employee_id?: number | null;
         role_id?: number | null;
+        role_slug?: string | null;
         avatar?: string | null;
     }
 }
@@ -26,6 +28,7 @@ declare module "next-auth/jwt" {
         id: string;
         employee_id?: number | null;
         role_id?: number | null;
+        role_slug?: string | null;
         avatar?: string | null;
     }
 }

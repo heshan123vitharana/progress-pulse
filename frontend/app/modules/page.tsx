@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/auth-store';
 
 interface Module {
     id: number;
@@ -20,6 +21,8 @@ interface Module {
 
 export default function ModulesPage() {
     const router = useRouter();
+    const { user } = useAuthStore();
+    const isAdmin = user?.role_slug === 'admin';
     const [modules, setModules] = useState<Module[]>([]);
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -159,15 +162,17 @@ export default function ModulesPage() {
                             <p className="text-slate-500 text-sm">{modules.length} total modules</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => { resetForm(); setShowModal(true); }}
-                        className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all"
-                    >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Module
-                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => { resetForm(); setShowModal(true); }}
+                            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Module
+                        </button>
+                    )}
                 </div>
 
                 {/* Cards Grid */}
@@ -200,22 +205,26 @@ export default function ModulesPage() {
 
                             <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                                 {/* Objects button removed */}
-                                <button
-                                    onClick={() => handleEdit(module)}
-                                    className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(module.id)}
-                                    className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                                {isAdmin && (
+                                    <>
+                                        <button
+                                            onClick={() => handleEdit(module)}
+                                            className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(module.id)}
+                                            className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -230,15 +239,17 @@ export default function ModulesPage() {
                         </div>
                         <h3 className="text-lg font-semibold text-slate-700 mb-2">No modules found</h3>
                         <p className="text-slate-500 mb-6">Create your first module to get started</p>
-                        <button
-                            onClick={() => { resetForm(); setShowModal(true); }}
-                            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Module
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => { resetForm(); setShowModal(true); }}
+                                className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/30 transition-all"
+                            >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Module
+                            </button>
+                        )}
                     </div>
                 )}
 

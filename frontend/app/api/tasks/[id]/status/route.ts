@@ -4,23 +4,30 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const updateStatusSchema = z.object({
-    status: z.enum(['picked_up']),
+    // 'picked_up' is for assignment acceptance
+    // '3' = QA, '7' = Test Server, '5' = Completed
+    status: z.enum(['picked_up', '3', '7', '5']),
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await requireAuth();
         const body = await request.json();
+        console.log(`[POST Status] Body:`, body);
+
         const validated = updateStatusSchema.parse(body);
         const p = await params;
         const taskId = BigInt(p.id);
         const userId = parseInt(session.user.id);
+
+        console.log(`[POST Status] User: ${userId}, Task: ${taskId}, Status: ${validated.status}`);
 
         const user = await prisma.users.findUnique({
             where: { id: userId }
         });
 
         if (!user?.employee_id) {
+            console.error(`[POST Status] User ${userId} has no employee_id`);
             return createErrorResponse('User is not linked to an employee record', 400);
         }
 
@@ -59,6 +66,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     updated_at: new Date()
                 }
             });
+        } else {
+            // Handle standard status updates (QA, Test, Complete)
+            console.log(`[POST Status] Updating task ${taskId} to status ${validated.status} (type: ${typeof validated.status})`);
+            try {
+                await prisma.tasks.update({
+                    where: { task_id: taskId },
+                    data: {
+                        status: validated.status,
+                        updated_at: new Date(),
+                    }
+                });
+            } catch (innerError: any) {
+                console.error('[POST Status] Prisma Update Failed:', innerError);
+                return createErrorResponse(
+                    `Prisma Validation Error: ${innerError.message}`,
+                    400
+                );
+            }
         }
 
         return createSuccessResponse({ success: true, message: 'Task status updated' });

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useEmployees } from '@/hooks/use-employees';
 import StatusToggle from '@/components/dashboard/StatusToggle';
+import PerformanceOverview from '@/components/dashboard/PerformanceOverview';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -66,7 +67,7 @@ export default function DashboardPage() {
 
     const quickActions = [
         { name: 'New Task', href: '/tasks/create', icon: 'M12 4v16m8-8H4', color: 'from-blue-500 to-cyan-500' },
-        { name: 'New Employee', href: '/employees/create', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', color: 'from-violet-500 to-purple-500' },
+        ...(user?.role_slug === 'admin' ? [{ name: 'New Employee', href: '/employees/create', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z', color: 'from-violet-500 to-purple-500' }] : []),
         { name: 'Analytics', href: '/analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: 'from-emerald-500 to-teal-500' },
         { name: 'Reports', href: '/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'from-amber-500 to-orange-500' }
     ];
@@ -90,7 +91,6 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="flex flex-col items-start lg:items-end gap-4">
-                        <img src="/rbs-logo.png" alt="RBS Logo" className="h-14 w-auto object-contain drop-shadow-lg" />
                         {currentEmployee && (
                             <StatusToggle
                                 employeeId={currentEmployee.employee_id}
@@ -173,7 +173,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Recent Activity Placeholder */}
                 <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm p-6 border border-slate-200/50">
                         <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
@@ -182,6 +181,7 @@ export default function DashboardPage() {
                             </svg>
                             Recent Activity
                         </h3>
+                        {/* ... existing recent activity content ... */}
                         <div className="space-y-4">
                             {[1, 2, 3].map((_, i) => (
                                 <div key={i} className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
@@ -197,34 +197,8 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm p-6 border border-slate-200/50">
-                        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            Performance Overview
-                        </h3>
-                        <div className="space-y-4">
-                            {[
-                                { label: 'Task Completion Rate', value: 75, color: 'from-cyan-500 to-blue-500' },
-                                { label: 'Team Productivity', value: 82, color: 'from-emerald-500 to-teal-500' },
-                                { label: 'On-Time Delivery', value: 68, color: 'from-amber-500 to-orange-500' }
-                            ].map((item, i) => (
-                                <div key={i} className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-600">{item.label}</span>
-                                        <span className="font-semibold text-slate-800">{item.value}%</span>
-                                    </div>
-                                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full bg-gradient-to-r ${item.color} rounded-full transition-all duration-1000`}
-                                            style={{ width: `${item.value}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Integrated Performance Overview Component */}
+                    <PerformanceOverview />
                 </div>
             </div>
         </Sidebar>

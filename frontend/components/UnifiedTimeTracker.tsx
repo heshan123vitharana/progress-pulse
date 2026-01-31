@@ -77,8 +77,8 @@ export default function UnifiedTimeTracker({
                         onClick={handleStart}
                         disabled={!!activeTimer || syncing}
                         className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeTimer
-                                ? 'bg-slate-200 text-slate-400'
-                                : 'bg-green-500 hover:bg-green-600 text-white'
+                            ? 'bg-slate-200 text-slate-400'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
                             }`}
                         title={activeTimer ? 'Another timer is running' : 'Start Timer'}
                     >
@@ -132,32 +132,15 @@ export default function UnifiedTimeTracker({
 
             {/* Control Buttons */}
             <div className="flex gap-3">
-                {isActiveForThis ? (
-                    <button
-                        onClick={handleStop}
-                        disabled={syncing}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-pulse"
-                    >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <rect x="6" y="6" width="8" height="8" rx="1" />
-                        </svg>
-                        Stop Tracking
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleStart}
-                        disabled={!!activeTimer || syncing}
-                        className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${activeTimer
-                                ? 'bg-slate-200 text-slate-500'
-                                : 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/25'
-                            }`}
-                    >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                        </svg>
-                        {activeTimer ? 'Timer Active Elsewhere' : 'Start Tracking'}
-                    </button>
-                )}
+                <a
+                    href="/timesheet"
+                    className="flex-1 bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Manage Time in Timesheet
+                </a>
             </div>
 
             {/* Session Info */}

@@ -21,11 +21,54 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '100');
         const offset = parseInt(searchParams.get('offset') || '0');
+        const startDate = searchParams.get('start_date');
+        const endDate = searchParams.get('end_date');
+        const employeeId = searchParams.get('employee_id');
+
+        let targetUserId = BigInt(session.user.id);
+
+        // Employee Filter (Admin Only)
+        // Type assertion to access custom property added in session
+        const userRole = (session.user as any).role_slug;
+        if (employeeId && userRole === 'admin') {
+            const user = await prisma.users.findFirst({
+                where: { employee_id: parseInt(employeeId) },
+                select: { id: true }
+            });
+
+            if (user) {
+                targetUserId = user.id;
+            } else {
+                // If filtering by an invalid employee, return empty
+                return createSuccessResponse([]);
+            }
+        }
+
+        const where: any = {
+            user_id: targetUserId
+        };
+
+        if (startDate) {
+            where.start_time = {
+                ...where.start_time,
+                gte: new Date(startDate)
+            };
+        }
+
+        if (endDate) {
+            // Set end date to end of day if it's just a date string, or strictly use the provided datetime
+            const end = new Date(endDate);
+            if (endDate.length === 10) { // YYYY-MM-DD
+                end.setHours(23, 59, 59, 999);
+            }
+            where.start_time = {
+                ...where.start_time,
+                lte: end
+            };
+        }
 
         const entries = await prisma.time_entries.findMany({
-            where: {
-                user_id: BigInt(session.user.id)
-            },
+            where,
             include: {
                 task: {
                     select: {

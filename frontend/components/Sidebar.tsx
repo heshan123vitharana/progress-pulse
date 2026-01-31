@@ -7,6 +7,8 @@ import { useSettingsStore } from '@/store/settings-store';
 import { toast } from 'react-hot-toast';
 import { signOut } from 'next-auth/react';
 import api from '@/lib/api';
+import TaskDetailsModal from './TaskDetailsModal';
+import { useTaskModal } from '@/hooks/use-task-modal';
 
 // Navigation items with required permissions
 const navigation = [
@@ -43,6 +45,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
     const prevNotificationCountRef = useRef(0);
+
+    // Task modal hook
+    const taskModal = useTaskModal();
 
     // Effect to play sound when notification count increases
     useEffect(() => {
@@ -475,7 +480,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                         ) : (
                                             <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                                 {notifications.map(n => {
-                                                    let content = { title: 'Notification', message: 'No content', link: '#' };
+                                                    let content: { title: string; message: string; link: string; task_id?: number } = { title: 'Notification', message: 'No content', link: '#' };
                                                     try {
                                                         if (typeof n.data === 'string') {
                                                             content = JSON.parse(n.data);
@@ -489,7 +494,35 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                                                     return (
                                                         <div
                                                             key={n.id}
-                                                            className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                                                            onClick={(e) => {
+                                                                // If clicking the mark read button, don't navigate
+                                                                if ((e.target as HTMLElement).closest('button')) return;
+
+                                                                setNotificationDropdownOpen(false);
+
+                                                                // Check if this is a task-related notification
+                                                                const isTaskNotification =
+                                                                    content.title.toLowerCase().includes('task') ||
+                                                                    content.message.toLowerCase().includes('task') ||
+                                                                    content.task_id;
+
+                                                                if (isTaskNotification && content.task_id) {
+                                                                    // Open task modal for task notifications
+                                                                    taskModal.openModal(content.task_id);
+                                                                } else if (content.link && content.link !== '#') {
+                                                                    // Navigate to specific link if available
+                                                                    router.push(content.link);
+                                                                } else if (isTaskNotification) {
+                                                                    // Fallback to tasks page if no task_id
+                                                                    router.push('/tasks');
+                                                                }
+
+                                                                // Also mark as read if not already
+                                                                if (!n.read_at) {
+                                                                    markAsRead(n.id, e);
+                                                                }
+                                                            }}
+                                                            className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${!n.read_at ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                                                         >
                                                             <div className="flex gap-3">
                                                                 <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!n.read_at ? 'bg-blue-500' : 'bg-transparent'}`}></div>
@@ -609,6 +642,16 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                 </div>
                 <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
             </div>
+
+            {/* Task Details Modal */}
+            <TaskDetailsModal
+                isOpen={taskModal.isOpen}
+                onClose={taskModal.closeModal}
+                taskId={taskModal.taskId}
+                onPickUp={taskModal.handlePickUp}
+                onReject={taskModal.handleReject}
+                loading={taskModal.loading}
+            />
         </div >
     );
 }

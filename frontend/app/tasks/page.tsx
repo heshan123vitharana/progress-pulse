@@ -4,9 +4,12 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { TASK_STATUSES, PRIORITY_LEVELS } from '@/lib/constants';
 import { useTasks } from '@/hooks/use-tasks';
+import api from '@/lib/api';
+import { useSession } from 'next-auth/react';
 
 export default function TasksPage() {
-    const { tasks, projects, loading, deleteTask } = useTasks();
+    const { data: session } = useSession();
+    const { tasks, projects, loading, deleteTask, refetch } = useTasks();
     const [activeTab, setActiveTab] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterPriority, setFilterPriority] = useState('');
@@ -224,6 +227,23 @@ export default function TasksPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex gap-2">
+                                                        {t.status === '1' && session?.user?.employee_id === t.assigned_to && (
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await api.post(`/tasks/${t.task_id}/status`, { status: '2' });
+                                                                        await refetch();
+                                                                    } catch (e) {
+                                                                        alert('Failed to accept task');
+                                                                    }
+                                                                }}
+                                                                className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all font-medium text-xs flex items-center gap-1"
+                                                                title="Accept Task"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                                Accept
+                                                            </button>
+                                                        )}
                                                         <Link
                                                             href={`/tasks/${t.task_id}/details`}
                                                             className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all"

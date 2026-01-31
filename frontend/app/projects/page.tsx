@@ -6,8 +6,11 @@ import { useProjects } from '@/hooks/use-projects';
 import api from '@/lib/api';
 import { Project, MainProject } from '@/types';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '@/store/auth-store';
 
 export default function ProjectsPage() {
+    const { user } = useAuthStore();
+    const isAdmin = Number(user?.role_id) === 1;
     const { projects: allProjects, customers, loading: projectsLoading, deleteProject, refetch: refetchProjects } = useProjects();
     const [mainProjects, setMainProjects] = useState<MainProject[]>([]);
     const [loadingMain, setLoadingMain] = useState(true);
@@ -195,21 +198,25 @@ export default function ProjectsPage() {
                         </select>
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">
-                        <button
-                            onClick={() => setIsMainProjectModalOpen(true)}
-                            className="flex-1 md:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-all shadow-sm"
-                        >
-                            + New Product Line
-                        </button>
-                        <Link
-                            href="/projects/create"
-                            className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            New Deployment
-                        </Link>
+                        {isAdmin && (
+                            <>
+                                <button
+                                    onClick={() => setIsMainProjectModalOpen(true)}
+                                    className="flex-1 md:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+                                >
+                                    + New Product Line
+                                </button>
+                                <Link
+                                    href="/projects/create"
+                                    className="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center"
+                                >
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    New Deployment
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -243,26 +250,28 @@ export default function ProjectsPage() {
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusStyle(mp.status)}`}>
                                                 {mp.status}
                                             </span>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleEditMainProject(mp)}
-                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Edit Product Line"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteMainProject(mp.id, mp.name)}
-                                                    className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    title="Delete Product Line"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            {isAdmin && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleEditMainProject(mp)}
+                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Edit Product Line"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteMainProject(mp.id, mp.name)}
+                                                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                        title="Delete Product Line"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -275,7 +284,7 @@ export default function ProjectsPage() {
                                                         <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Deployment Name</th>
                                                         <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Code</th>
                                                         <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-                                                        <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                                                        {isAdmin && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Actions</th>}
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100/50">
@@ -293,20 +302,22 @@ export default function ProjectsPage() {
                                                                     {p.status}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="flex justify-end gap-2">
-                                                                    <Link href={`/projects/${p.project_id}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
-                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                        </svg>
-                                                                    </Link>
-                                                                    <button onClick={() => handleDelete(p.project_id, p.project_name)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
-                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                        </svg>
-                                                                    </button>
-                                                                </div>
-                                                            </td>
+                                                            {isAdmin && (
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <Link href={`/projects/${p.project_id}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                            </svg>
+                                                                        </Link>
+                                                                        <button onClick={() => handleDelete(p.project_id, p.project_name)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -315,7 +326,7 @@ export default function ProjectsPage() {
                                     ) : (
                                         <div className="p-8 text-center text-slate-500 text-sm">
                                             No deployments found for this product line.
-                                            <Link href="/projects/create" className="text-blue-600 font-medium hover:underline ml-1">Create one</Link>
+                                            {isAdmin && <Link href="/projects/create" className="text-blue-600 font-medium hover:underline ml-1">Create one</Link>}
                                         </div>
                                     )}
                                 </div>
@@ -336,7 +347,7 @@ export default function ProjectsPage() {
                                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Project Name</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Code</th>
                                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
-                                                <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                                                {isAdmin && <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Actions</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100/50">
@@ -354,20 +365,22 @@ export default function ProjectsPage() {
                                                             {p.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <Link href={`/projects/${p.project_id}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                            </Link>
-                                                            <button onClick={() => handleDelete(p.project_id, p.project_name)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    {isAdmin && (
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex justify-end gap-2">
+                                                                <Link href={`/projects/${p.project_id}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    </svg>
+                                                                </Link>
+                                                                <button onClick={() => handleDelete(p.project_id, p.project_name)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

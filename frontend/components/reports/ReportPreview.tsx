@@ -11,9 +11,10 @@ interface ReportPreviewProps {
         project_id?: string;
         status?: string;
     };
+    employeeName?: string;
 }
 
-export default function ReportPreview({ type, data, filters }: ReportPreviewProps) {
+export default function ReportPreview({ type, data, filters, employeeName }: ReportPreviewProps) {
     const getPriorityLabel = (priority: number) => {
         switch (priority) {
             case 1: return <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-semibold">Low</span>;
@@ -72,8 +73,8 @@ export default function ReportPreview({ type, data, filters }: ReportPreviewProp
                                 className="object-contain"
                             />
                         </div>
-                        <div>
-                            <h1 className="text-lg font-bold text-black tracking-tight leading-none">RapidVenture Business Solutions</h1>
+                        <div className="origin-left transform scale-x-90">
+                            <h1 className="text-lg font-bold text-black tracking-tighter leading-none whitespace-nowrap">RapidVenture Business Solutions</h1>
                             <p className="text-[10px] text-gray-600 mt-0.5">Project Management System</p>
                         </div>
                     </div>
@@ -114,7 +115,7 @@ export default function ReportPreview({ type, data, filters }: ReportPreviewProp
                             {filters.employee_id && (
                                 <div>
                                     <span className="font-bold text-gray-700 uppercase mr-1.5">Employee:</span>
-                                    <span className="font-semibold text-black">#{filters.employee_id}</span>
+                                    <span className="font-semibold text-black">{employeeName || `#${filters.employee_id}`}</span>
                                 </div>
                             )}
                             {filters.status && (
@@ -135,19 +136,19 @@ export default function ReportPreview({ type, data, filters }: ReportPreviewProp
                                 {type === 'daily' ? (
                                     <>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Code</th>
-                                        <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Task Name</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Project</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Module</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Assigned To</th>
+                                        <th className="py-2 px-2.5 font-bold text-[10px] uppercase text-center">Billable Hours</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase text-center">Priority</th>
                                     </>
                                 ) : (
                                     <>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Code</th>
-                                        <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Task Name</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Project</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Assigned To</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase">Status</th>
+                                        <th className="py-2 px-2.5 font-bold text-[10px] uppercase text-center">Billable Hours</th>
                                         <th className="py-2 px-2.5 font-bold text-[10px] uppercase text-right">Date</th>
                                     </>
                                 )}
@@ -163,19 +164,19 @@ export default function ReportPreview({ type, data, filters }: ReportPreviewProp
                                         {type === 'daily' ? (
                                             <>
                                                 <td className="py-1.5 px-2.5 font-mono text-red-600 font-semibold whitespace-nowrap">{item.task_code || '-'}</td>
-                                                <td className="py-1.5 px-2.5 font-semibold text-black">{item.task_name}</td>
                                                 <td className="py-1.5 px-2.5 text-gray-700">{item.project_name || '-'}</td>
                                                 <td className="py-1.5 px-2.5 text-gray-700">{item.module_name || '-'}</td>
                                                 <td className="py-1.5 px-2.5 text-gray-700">{item.assigned_to || '-'}</td>
+                                                <td className="py-1.5 px-2.5 text-center font-mono text-gray-700">{item.billable_hours || '0.00'}</td>
                                                 <td className="py-1.5 px-2.5 text-center">{getPriorityLabel(item.priority || 2)}</td>
                                             </>
                                         ) : (
                                             <>
                                                 <td className="py-1.5 px-2.5 font-mono text-red-600 font-semibold whitespace-nowrap">{item.task_code || '-'}</td>
-                                                <td className="py-1.5 px-2.5 font-semibold text-black">{item.task_name}</td>
                                                 <td className="py-1.5 px-2.5 text-gray-700">{item.project_name || '-'}</td>
                                                 <td className="py-1.5 px-2.5 text-gray-700">{item.assigned_to || '-'}</td>
                                                 <td className="py-1.5 px-2.5">{getStatusLabel(item.status)}</td>
+                                                <td className="py-1.5 px-2.5 text-center font-mono text-gray-700">{item.billable_hours || '0.00'}</td>
                                                 <td className="py-1.5 px-2.5 text-right text-gray-600 whitespace-nowrap">
                                                     {formatDate(item.created_at)}
                                                 </td>

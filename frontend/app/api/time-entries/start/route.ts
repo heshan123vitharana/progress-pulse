@@ -85,9 +85,18 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true, data: safeEntry, message: 'Timer started' }, { status: 201 });
     } catch (error: any) {
+        console.error('Time entry start error:', error);
+        console.error('Error stack:', error.stack);
+
         if (error instanceof z.ZodError) {
             return NextResponse.json({ success: false, message: 'Validation failed', errors: error.flatten().fieldErrors }, { status: 422 });
         }
-        return NextResponse.json({ success: false, message: 'Failed to start timer', error: error.message }, { status: 500 });
+
+        return NextResponse.json({
+            success: false,
+            message: 'Failed to start timer',
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        }, { status: 500 });
     }
 }

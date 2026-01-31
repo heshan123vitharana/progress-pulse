@@ -45,6 +45,7 @@ export async function GET(request: Request) {
             priority: task.task_priority,
             status: task.is_accepted ? 'Accepted' : 'Pending', // Simplified status for summary
             created_at: task.created_at,
+            billable_hours: (task.total_time_seconds / 3600).toFixed(2),
         }));
 
         return NextResponse.json(reportData);

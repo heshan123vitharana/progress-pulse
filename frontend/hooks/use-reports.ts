@@ -102,23 +102,23 @@ export function useReports() {
         let body = [];
 
         if (type === 'daily') {
-            head = [['Code', 'Task Name', 'Project', 'Module', 'Assigned To', 'Priority']];
+            head = [['Code', 'Project', 'Module', 'Assigned To', 'Billable Hours', 'Priority']];
             body = data.map((item: any) => [
                 item.task_code || '-',
-                item.task_name || '-',
                 item.project_name || '-',
                 item.module_name || '-',
                 item.assigned_to || '-',
+                item.billable_hours || '0.00',
                 getPriorityLabel(item.priority || 2)
             ]);
         } else {
-            head = [['Code', 'Task Name', 'Project', 'Assigned To', 'Status', 'Date']];
+            head = [['Code', 'Project', 'Assigned To', 'Status', 'Billable Hours', 'Date']];
             body = data.map((item: any) => [
                 item.task_code || '-',
-                item.task_name || '-',
                 item.project_name || '-',
                 item.assigned_to || '-',
                 item.status || '-',
+                item.billable_hours || '0.00',
                 item.created_at ? new Date(item.created_at).toLocaleDateString() : '-'
             ]);
         }
@@ -234,19 +234,19 @@ export function useReports() {
             if (type === 'daily') {
                 excelData = data.map((item: any) => ({
                     'Code': item.task_code || '-',
-                    'Task Name': item.task_name || '-',
                     'Project': item.project_name || '-',
                     'Module': item.module_name || '-',
                     'Assigned To': item.assigned_to || '-',
+                    'Billable Hours': item.billable_hours || '0.00',
                     'Priority': getPriorityLabel(item.priority || 2)
                 }));
             } else {
                 excelData = data.map((item: any) => ({
                     'Code': item.task_code || '-',
-                    'Task Name': item.task_name || '-',
                     'Project': item.project_name || '-',
                     'Assigned To': item.assigned_to || '-',
                     'Status': item.status || '-',
+                    'Billable Hours': item.billable_hours || '0.00',
                     'Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : '-'
                 }));
             }

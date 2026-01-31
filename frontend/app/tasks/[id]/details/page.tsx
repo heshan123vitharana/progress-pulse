@@ -95,27 +95,6 @@ export default function TaskDetailsPage() {
         }
     };
 
-    const handleStartTask = async () => {
-        if (!taskId || !task) return;
-        try {
-            // 1. Update status to In Progress (2) if not already
-            if (task.status !== '2') {
-                await api.put(`/tasks/${taskId}`, { status: '2' });
-                // Update local state immediately for UI responsiveness
-                setTask(prev => prev ? { ...prev, status: '2' } : null);
-            }
-            // 2. Start Timer
-            await startTimer(taskId, undefined, `Working on ${task.task_name}`);
-            await fetchTaskDetails();
-        } catch (err: any) {
-            showError(err.message || 'Failed to start task');
-        }
-    };
-
-    const handlePauseTask = async () => {
-        await stopTimer();
-        // Optional: set status to something else? Keeping it 'In Progress' is usually standard until 'Completed'.
-    };
 
     const isAssignedToMe = task?.currentUserAssignment !== undefined;
     const isPendingAcceptance = task?.currentUserAssignment?.acceptance_status === 'pending';
@@ -183,30 +162,15 @@ export default function TaskDetailsPage() {
                                 </button>
                             )}
 
-                            {isAssignedToMe && isAccepted && !isTimerRunningForThisTask && (
-                                <button
-                                    onClick={handleStartTask}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Start Task
-                                </button>
-                            )}
-
-                            {isTimerRunningForThisTask && (
-                                <button
-                                    onClick={handlePauseTask}
-                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Pause Task
-                                </button>
-                            )}
+                            <Link
+                                href="/timesheet"
+                                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Track Time in Timesheet
+                            </Link>
 
                             <Link
                                 href={`/tasks/${taskId}/edit`}
@@ -309,7 +273,7 @@ export default function TaskDetailsPage() {
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <h3 className="text-sm font-semibold text-gray-900 mb-3">Status</h3>
                             <select
-                                value={task.status}
+                                value={task.status || ''}
                                 onChange={(e) => handleStatusChange(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >

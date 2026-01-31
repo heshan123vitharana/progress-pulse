@@ -3,13 +3,20 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth-utils';
+import { serializeBigInt } from '@/lib/bigint-utils';
 
 const taskSchema = z.object({
     task_name: z.string().min(1).max(255).optional(),
     description: z.string().optional().nullable(),
     task_priority: z.number().int().optional(),
-    assigned_to: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().optional().nullable()),
-    assigned_employee_id: z.preprocess((val) => (val === "" ? null : Number(val)), z.number().optional().nullable()),
+    assigned_to: z.preprocess(
+        (val) => (val === "" || val === undefined ? undefined : Number(val)),
+        z.number().optional().nullable()
+    ),
+    assigned_employee_id: z.preprocess(
+        (val) => (val === "" || val === undefined ? undefined : Number(val)),
+        z.number().optional().nullable()
+    ),
     status: z.string().optional(),
 });
 
@@ -103,8 +110,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     try {
         const p = await params;
         const id = BigInt(p.id);
-        const body = await request.json();
+        console.log(`[PUT Task ${id}] Starting update...`);
+
+        let body;
+        try {
+            body = await request.json();
+            console.log(`[PUT Task ${id}] Body:`, body);
+        } catch (e) {
+            console.error(`[PUT Task ${id}] Failed to parse JSON body`, e);
+            throw new Error('Invalid JSON body');
+        }
+
         const validated = taskSchema.parse(body);
+        console.log(`[PUT Task ${id}] Validated data:`, validated);
 
         const existing = await prisma.tasks.findUnique({ where: { task_id: id } });
         if (!existing) {
@@ -129,16 +147,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             }
         }
 
+        console.log(`[PUT Task ${id}] Update execution...`);
         const updated = await prisma.tasks.update({
             where: { task_id: id },
             data: {
                 task_name: validated.task_name,
                 description: validated.description,
                 task_priority: validated.task_priority,
-                assigned_to: assignedToUserId !== null ? assignedToUserId : undefined, // Only update if resolved
+                status: validated.status,
+                assigned_to: assignedToUserId !== null ? assignedToUserId : undefined,
                 updated_at: new Date()
             }
         });
+        console.log(`[PUT Task ${id}] Prisma update success.`);
 
         // Send Notification if assigned_to changed (and is not null)
         if (assignedToUserId && existing.assigned_to !== assignedToUserId) {
@@ -184,14 +205,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             }
         }
 
-        const safeUpdated = JSON.parse(JSON.stringify(updated, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-        ));
-
-        return NextResponse.json({ success: true, message: 'Task updated successfully', data: safeUpdated });
+        return NextResponse.json({
+            success: true,
+            message: 'Task updated successfully',
+            data: serializeBigInt(updated)
+        });
 
     } catch (error: any) {
-        return NextResponse.json({ success: false, message: 'Failed to update task', error: error.message }, { status: 500 });
+        console.error('Task update error:', error);
+
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({
+                success: false,
+                message: `Validation failed: ${JSON.stringify(error.flatten().fieldErrors)}`,
+                errors: error.flatten().fieldErrors
+            }, { status: 400 });
+        }
+
+        return NextResponse.json({
+            success: false,
+            message: `Failed to update task: ${error.message}`,
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        }, { status: 500 });
     }
 }
 

@@ -88,33 +88,15 @@ export default function TaskTimeTracker({ taskId }: TimeTrackerProps) {
                 </div>
 
                 <div className="flex gap-4">
-                    {!isTracking ? (
-                        <button
-                            onClick={handleSwitchOn}
-                            disabled={!!activeTimer} // Disable if tracking another task
-                            className={`flex-1 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 ${activeTimer
-                                ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                                : 'bg-green-600 text-white hover:bg-green-700'
-                                }`}
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {activeTimer ? 'Timer Active Elsewhere' : 'Start Tracking'}
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleSwitchOff}
-                            className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-semibold flex items-center justify-center gap-2 animate-pulse"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                            </svg>
-                            Stop Tracking
-                        </button>
-                    )}
+                    <a
+                        href="/timesheet"
+                        className="flex-1 bg-violet-600 text-white px-6 py-3 rounded-lg hover:bg-violet-700 font-semibold flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Manage & Track in Timesheet
+                    </a>
                 </div>
 
                 {isTracking && (

@@ -10,10 +10,20 @@ export function useTimeTracking() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchTimeEntries = useCallback(async () => {
+    const fetchTimeEntries = useCallback(async (startDate?: string, endDate?: string, employeeId?: string) => {
         try {
             setLoading(true);
-            const res = await retryWithBackoff(() => api.get('/time-entries'));
+            let url = '/time-entries';
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (employeeId) params.append('employee_id', employeeId);
+
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const res = await retryWithBackoff(() => api.get(url));
             const data = Array.isArray(res.data) ? res.data : res.data.data || [];
             setTimeEntries(data);
             setError('');
@@ -60,29 +70,38 @@ export function useTimeTracking() {
         }
     }, []);
 
-    const stopTimer = useCallback(async () => {
-        if (!activeTimer) {
-            showError('No active timer');
+    const stopTimer = useCallback(async (entryId?: string | number) => {
+        const idToStop = entryId || activeTimer?.id;
+
+        if (!idToStop) {
+            showError('No active timer to stop');
             return { success: false, error: 'No active timer' };
         }
 
-        // Optimistic update
-        const previousTimer = activeTimer;
-        setActiveTimer(null);
+        // Optimistic update if we're stopping the "global" active timer
+        const isStoppingActive = idToStop === activeTimer?.id;
+        let previousTimer = activeTimer;
+
+        if (isStoppingActive) {
+            setActiveTimer(null);
+        }
 
         try {
-            const res = await api.post(`/time-entries/${activeTimer.id}/stop`);
+            const res = await api.post(`/time-entries/${idToStop}/stop`);
             await fetchTimeEntries(); // Refresh list
+            await fetchActiveTimer(); // Sync status
             showSuccess('Timer stopped');
             return { success: true, data: res.data.data };
         } catch (err: any) {
             // Rollback on error
-            setActiveTimer(previousTimer);
+            if (isStoppingActive) {
+                setActiveTimer(previousTimer);
+            }
             const message = err.response?.data?.message || 'Failed to stop timer';
             showError(message);
             return { success: false, error: message };
         }
-    }, [activeTimer, fetchTimeEntries]);
+    }, [activeTimer, fetchTimeEntries, fetchActiveTimer]);
 
     const createTimeEntry = useCallback(async (data: Partial<TimeEntry>) => {
         try {

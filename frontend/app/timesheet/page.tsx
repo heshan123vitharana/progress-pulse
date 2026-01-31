@@ -1,13 +1,17 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Sidebar from '@/components/Sidebar';
+import { useSession } from 'next-auth/react';
+import { useEmployees } from '@/hooks/use-employees';
 import { LoadingSpinner } from '@/components/shared';
 import { useTimeTracking } from '@/hooks/use-time-tracking';
 import { useTasks } from '@/hooks/use-tasks';
 import { useProjects } from '@/hooks/use-projects';
+import { TASK_STATUSES } from '@/lib/constants';
 import { TimeEntry } from '@/types';
 import api from '@/lib/api';
 import { showSuccess, showError } from '@/lib/error-utils';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Helper to check valid date
 const isValidDate = (d: any) => d instanceof Date && !isNaN(d.getTime());
@@ -25,15 +29,127 @@ interface GroupedEntry {
     activeEntryStartTime?: string | Date;
 }
 
+
 export default function TimesheetPage() {
+    // Data Hooks
+    const { data: session } = useSession();
+    const { employees } = useEmployees();
+    const isAdmin = session?.user?.role_slug === 'admin';
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // State
     const { timeEntries, loading, createTimeEntry, deleteTimeEntry, activeTimer, stopTimer, startTimer, refetch: refetchTime } = useTimeTracking();
-    const { tasks } = useTasks();
+    const { tasks, refetch: refetchTasks } = useTasks();
     const { projects } = useProjects();
     const [showForm, setShowForm] = useState(false);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+    const [pickedTaskId, setPickedTaskId] = useState<number | null>(null);
+
+
 
     // UI States
     const [loadingAction, setLoadingAction] = useState(false);
     const [completingGroup, setCompletingGroup] = useState<GroupedEntry | null>(null);
+
+    const [taskStatusFilter, setTaskStatusFilter] = useState('all');
+
+    const filteredTasks = useMemo(() => {
+        if (taskStatusFilter === 'all') return tasks;
+        return tasks.filter(t => t.status?.toString() === taskStatusFilter);
+    }, [tasks, taskStatusFilter]);
+
+    // Initialization
+    useEffect(() => {
+        if (session?.user?.employee_id && !isAdmin) {
+            setSelectedEmployeeId(String(session.user.employee_id));
+        }
+    }, [session, isAdmin]);
+
+    // Handle picked task from URL
+    useEffect(() => {
+        const taskIdParam = searchParams.get('picked_task');
+        if (taskIdParam && tasks.length > 0 && !activeTimer) {
+            const taskId = parseInt(taskIdParam);
+            const task = tasks.find(t => t.task_id === taskId);
+
+            if (task) {
+                // Auto-start the timer for this task
+                setLoadingAction(true);
+                startTimer(
+                    Number(task.task_id),
+                    task.project_id ? Number(task.project_id) : undefined,
+                    task.task_name
+                ).then(() => {
+                    showSuccess(`Started tracking time for: ${task.task_name}`);
+                    setPickedTaskId(taskId);
+
+                    // Remove query parameter from URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('picked_task');
+                    router.replace(url.pathname + url.search);
+
+                    // Clear highlight after 5 seconds
+                    setTimeout(() => setPickedTaskId(null), 5000);
+                }).catch(err => {
+                    console.error('Failed to auto-start timer:', err);
+                }).finally(() => {
+                    setLoadingAction(false);
+                });
+            }
+        }
+    }, [searchParams, tasks, activeTimer]);
+
+    // Date Range Logic
+    const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+
+    const getDateRange = () => {
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const start = new Date(now);
+        const end = new Date(now);
+
+        if (timeRange === 'today') {
+            return { startDate: today, endDate: today };
+        } else if (timeRange === 'week') {
+            // Monday to Sunday logic
+            const day = start.getDay() || 7; // Get current day number, converting Sun (0) to 7 (1=Mon, 7=Sun)
+            start.setDate(start.getDate() - (day - 1)); // Go back to Monday
+            start.setHours(0, 0, 0, 0);
+
+            // End of week (Sunday)
+            end.setTime(start.getTime());
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+
+            return {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            };
+        } else {
+            // Month
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+
+            // End of month
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
+            end.setHours(23, 59, 59, 999);
+
+            return {
+                startDate: start.toISOString().split('T')[0],
+                endDate: end.toISOString().split('T')[0]
+            };
+        }
+    };
+
+    // Refetch when range or employee changes
+    // This will update the 'filterParams' in the hook, so subsequent internal refetches (e.g. from stopTimer) use these dates.
+    useEffect(() => {
+        const { startDate, endDate } = getDateRange();
+        // Pass employeeId if selected (or empty string/undefined will be ignored by hook)
+        refetchTime(startDate, endDate, selectedEmployeeId);
+    }, [timeRange, selectedEmployeeId, refetchTime]);
 
     // Grouping Logic
     const groupedEntries = useMemo(() => {
@@ -137,7 +253,12 @@ export default function TimesheetPage() {
             const projectId = group.project?.project_id ? Number(group.project.project_id) : undefined;
 
             await startTimer(taskId, projectId, group.description);
-            await refetchTime();
+            // startTimer does not automatically refetch list in the hook, so we must trigger it.
+            // Since filter params are persisted, we can just call refetchTime() without args (or with current range, but simpler without).
+            // Actually explicit is safer if hook state hasn't updated yet? No, useEffect sets it on mount/change.
+            // But we can just pass the dates to be sure and safe.
+            const { startDate, endDate } = getDateRange();
+            await refetchTime(startDate, endDate, selectedEmployeeId);
         } catch (err) {
             console.error(err);
         } finally {
@@ -147,10 +268,21 @@ export default function TimesheetPage() {
 
     const handlePauseGroup = async () => {
         if (loadingAction) return;
+
+        // Find if we have a running timer in this group or globally
+        const runningEntry = activeTimer || timeEntries.find(e => e.status === 'running');
+
+        if (!runningEntry) {
+            showError('No active timer running');
+            return;
+        }
+
         setLoadingAction(true);
         try {
-            await stopTimer();
-            await refetchTime();
+            // stopTimer ALREADY calls fetchTimeEntries() internally.
+            // Because we updated useTimeTracking to persist filterParams, it will use the correct dates.
+            // So we do NOT need to call refetchTime() here again.
+            await stopTimer(runningEntry.id);
         } catch (err) {
             console.error(err);
         } finally {
@@ -169,15 +301,20 @@ export default function TimesheetPage() {
         setLoadingAction(true);
         try {
             if (completingGroup.isRunning) {
-                await stopTimer();
+                // Find the specific running entry in this group
+                const runningEntry = completingGroup.entries.find(e => e.status === 'running' || e.id === activeTimer?.id);
+                // This triggers internal refetch
+                await stopTimer(runningEntry?.id);
             }
             // Map choices to new status codes
             const newStatus = statusChoice === 'qa' ? '4' : statusChoice === 'test' ? '7' : '8';
-            await api.put(`/tasks/${completingGroup.task.task_id}`, { status: newStatus });
+            await api.post(`/tasks/${completingGroup.task.task_id}/status`, { status: newStatus });
 
             const statusLabel = statusChoice === 'qa' ? 'In-QA' : statusChoice === 'test' ? 'In-Test Server' : 'Completed';
             showSuccess(`Task marked as ${statusLabel}`);
             setCompletingGroup(null);
+
+            // We need to refetch to update the task status in the UI (since stopTimer refetch happened BEFORE status update)
             await refetchTime();
         } catch (err: any) {
             showError(err.response?.data?.message || 'Failed to update task status');
@@ -195,20 +332,10 @@ export default function TimesheetPage() {
     };
 
     // Calculate stats for dashboard cards
-    const todayEntries = useMemo(() => {
-        const today = new Date().toISOString().split('T')[0];
-        return timeEntries.filter(entry => {
-            if (!entry.start_time) return false;
-            const entryDate = new Date(entry.start_time);
-            if (!isValidDate(entryDate)) return false;
-            return entryDate.toISOString().split('T')[0] === today;
-        });
-    }, [timeEntries]);
-
     const stats = useMemo(() => {
-        const totalSeconds = todayEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
-        const completedTasks = new Set(todayEntries.filter(e => e.task_id).map(e => e.task_id)).size;
-        const billableSeconds = todayEntries.filter(e => e.is_billable).reduce((sum, e) => sum + (e.duration || 0), 0);
+        const totalSeconds = timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
+        const completedTasks = new Set(timeEntries.filter(e => e.task_id).map(e => e.task_id)).size;
+        const billableSeconds = timeEntries.filter(e => e.is_billable).reduce((sum, e) => sum + (e.duration || 0), 0);
 
         return {
             totalHours: (totalSeconds / 3600).toFixed(1),
@@ -216,11 +343,11 @@ export default function TimesheetPage() {
             completedTasks,
             billableHours: (billableSeconds / 3600).toFixed(1)
         };
-    }, [todayEntries, activeTimer]);
+    }, [timeEntries, activeTimer]);
 
     const statCards = [
         {
-            name: 'Total Hours Today',
+            name: timeRange === 'today' ? 'Total Hours Today' : timeRange === 'week' ? 'Total Hours This Week' : 'Total Hours This Month',
             value: `${stats.totalHours}h`,
             icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
             gradient: 'from-blue-500 to-cyan-500',
@@ -261,7 +388,7 @@ export default function TimesheetPage() {
         <Sidebar>
             <div className="p-6 lg:p-8">
                 {/* Dashboard-style Header */}
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
                     <div>
                         <div className="flex items-center space-x-3 mb-2">
                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
@@ -274,6 +401,44 @@ export default function TimesheetPage() {
                                 <p className="text-slate-500 mt-0.5">Track your time and manage tasks</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                            {/* Time Range Selector */}
+                            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 flex">
+                                {(['today', 'week', 'month'] as const).map((range) => (
+                                    <button
+                                        key={range}
+                                        onClick={() => setTimeRange(range)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 capitalize ${timeRange === range
+                                            ? 'bg-violet-100 text-violet-700 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        {range === 'today' ? 'Today' : range === 'week' ? 'This Week' : 'This Month'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Admin Employee Selector */}
+                        {isAdmin && (
+                            <div className="w-full">
+                                <select
+                                    value={selectedEmployeeId}
+                                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all cursor-pointer hover:border-violet-300"
+                                >
+                                    <option value="">My Timesheet</option>
+                                    {employees.map((emp) => (
+                                        <option key={emp.employee_id} value={emp.employee_id}>
+                                            {emp.first_name} {emp.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -348,7 +513,7 @@ export default function TimesheetPage() {
                                         <button
                                             onClick={() => handleCompleteClick(activeGroup)}
                                             disabled={loadingAction}
-                                            className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/20 rounded-xl transition-all text-white font-medium"
+                                            className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-50 shadow-lg shadow-violet-600/20 rounded-xl transition-all text-white font-medium"
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                                             Complete Task
@@ -421,17 +586,131 @@ export default function TimesheetPage() {
                 )
                 }
 
+
+                {/* --- MY TASKS FILTER & LIST --- */}
+                <div className="mb-8 bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
+                    {/* Filter Bar */}
+                    <div className="px-3 py-2 border-b border-slate-100">
+                        <div className="flex flex-wrap items-center gap-1">
+                            <button
+                                onClick={() => setTaskStatusFilter('all')}
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${taskStatusFilter === 'all'
+                                    ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500/20'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                    }`}
+                            >
+                                All
+                            </button>
+                            {TASK_STATUSES.map(status => (
+                                <button
+                                    key={status.value}
+                                    onClick={() => setTaskStatusFilter(status.value)}
+                                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all whitespace-nowrap ${taskStatusFilter === status.value
+                                        ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500/20'
+                                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                        }`}
+                                >
+                                    {status.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Task List Header */}
+                    <div className="px-8 py-4 bg-slate-50/50 flex items-center justify-between border-b border-slate-100">
+                        <h2 className="text-lg font-bold text-slate-800">
+                            {taskStatusFilter === 'all' ? 'All Tasks' : `${TASK_STATUSES.find(s => s.value === taskStatusFilter)?.label} Tasks`}
+                        </h2>
+                        <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">
+                            {filteredTasks.length} Tasks
+                        </span>
+                    </div>
+
+                    {/* Task List */}
+                    <div className="divide-y divide-slate-100">
+                        {filteredTasks.length > 0 ? (
+                            filteredTasks.map(task => (
+                                <div
+                                    key={task.task_id}
+                                    className={`px-8 py-5 flex items-center justify-between hover:bg-slate-50 transition-all ${pickedTaskId === task.task_id ? 'bg-emerald-50 border-l-4 border-emerald-500 animate-pulse' : ''
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${task.status === '2' ? 'bg-emerald-100 text-emerald-600' :
+                                            task.status === '8' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-slate-800">{task.task_name}</h3>
+                                                {pickedTaskId === task.task_id && (
+                                                    <svg className="w-5 h-5 text-emerald-500 animate-bounce" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                                                <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-xs">{task.task_code}</span>
+                                                {task.project && <span>{task.project.project_name}</span>}
+                                                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">
+                                                    Status: {TASK_STATUSES.find(s => s.value === task.status?.toString())?.label || task.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons based on status */}
+                                    <div className="flex items-center gap-2">
+                                        {task.status === '2' && ( // Accept -> Start
+                                            <button
+                                                onClick={async () => {
+                                                    if (loadingAction) return;
+                                                    setLoadingAction(true);
+                                                    try {
+                                                        await api.post(`/tasks/${task.task_id}/status`, { status: '3' }); // In Progress
+                                                        await startTimer(Number(task.task_id), task.project_id ? Number(task.project_id) : undefined, task.task_name);
+                                                        const { startDate, endDate } = getDateRange();
+                                                        await refetchTime(startDate, endDate, selectedEmployeeId);
+                                                        await refetchTasks();
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        showError('Failed to start task');
+                                                    } finally {
+                                                        setLoadingAction(false);
+                                                    }
+                                                }}
+                                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-all shadow-sm flex items-center gap-2 text-sm"
+                                            >
+                                                Start Working
+                                            </button>
+                                        )}
+                                        {/* Add other status transitions here if needed, or keep generic for now */}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-slate-500">
+                                No tasks found in this category.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+
                 {/* --- ACTIVITY LIST --- */}
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden">
                     <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-slate-800">Today's Activity</h2>
+                        <h2 className="text-lg font-bold text-slate-800">
+                            {timeRange === 'today' ? "Today's Activity" : timeRange === 'week' ? "This Week's Activity" : "This Month's Activity"}
+                        </h2>
                         <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{groupedEntries.length} Tasks</span>
                     </div>
 
                     {loading ? (
                         <div className="p-12"><LoadingSpinner /></div>
                     ) : groupedEntries.length === 0 ? (
-                        <div className="p-12 text-center text-slate-500">No activity yet today. Pick a task to get started!</div>
+                        <div className="p-12 text-center text-slate-500">No activity found for this period.</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
@@ -586,8 +865,8 @@ export default function TimesheetPage() {
                         </div>
                     )
                 }
-            </div >
-        </Sidebar >
+            </div>
+        </Sidebar>
     );
 }
 
@@ -595,11 +874,14 @@ function LiveDuration({ startTime, baseDuration = 0 }: { startTime: string | Dat
     const [duration, setDuration] = useState(0);
 
     useEffect(() => {
+        if (!startTime) return;
+
         const start = new Date(startTime).getTime();
+        if (isNaN(start)) return;
 
         const update = () => {
             const now = new Date().getTime();
-            const activeSeconds = Math.floor((now - start) / 1000);
+            const activeSeconds = Math.max(0, Math.floor((now - start) / 1000));
             setDuration(baseDuration + activeSeconds);
         };
 
@@ -608,9 +890,9 @@ function LiveDuration({ startTime, baseDuration = 0 }: { startTime: string | Dat
         return () => clearInterval(interval);
     }, [startTime, baseDuration]);
 
-    const h = Math.floor(duration / 3600);
-    const m = Math.floor((duration % 3600) / 60);
-    const s = duration % 60;
+    const h = Math.floor(duration / 3600) || 0;
+    const m = Math.floor((duration % 3600) / 60) || 0;
+    const s = Math.floor(duration % 60) || 0;
 
     return (
         <span className="font-mono tabular-nums">

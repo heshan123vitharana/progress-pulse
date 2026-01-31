@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import Sidebar from '@/components/Sidebar';
 import { useReports } from '@/hooks/use-reports';
 import { useEmployees } from '@/hooks/use-employees';
@@ -21,6 +22,7 @@ const TASK_STATUSES = [
 ];
 
 export default function ReportsPage() {
+    const { data: session } = useSession();
     const { generateDailyReport, generateTaskReport, exportReport, silentPrintReport, exportToExcel, loading } = useReports();
     const { employees } = useEmployees();
     const { projects } = useProjects();
@@ -41,6 +43,17 @@ export default function ReportsPage() {
     });
     const [reportData, setReportData] = useState<any>(null);
 
+    const isAdmin = session?.user?.role_slug === 'admin';
+
+    // Set default employee filter for non-admins
+    useEffect(() => {
+        if (session?.user?.employee_id && !isAdmin) {
+            setFilters(prev => ({
+                ...prev,
+                employee_id: String(session.user.employee_id)
+            }));
+        }
+    }, [session, isAdmin]);
     const handleGenerateReport = async () => {
         const filterParams = {
             ...filters,
@@ -87,6 +100,12 @@ export default function ReportsPage() {
         await exportToExcel(reportType, filterParams);
     };
 
+
+
+    const selectedEmployee = filters.employee_id
+        ? employees.find(e => String(e.employee_id) === String(filters.employee_id))
+        : null;
+
     return (
         <Sidebar>
             <div className="p-6 lg:p-8 space-y-8 min-h-screen font-sans">
@@ -106,20 +125,20 @@ export default function ReportsPage() {
                 <div className="grid lg:grid-cols-12 gap-8">
                     {/* --- LEFT PANEL: Configuration --- */}
                     <div className="lg:col-span-4 space-y-6">
-                        <div className="bg-white rounded-3xl shadow-xl border border-slate-100/60 p-6">
-                            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                        <div className="bg-white rounded-3xl shadow-xl border border-slate-100/60 p-4">
+                            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                                 Report Configuration
                             </h2>
 
                             {/* Report Type Switcher */}
-                            <div className="bg-slate-100 p-1.5 rounded-xl flex mb-8">
+                            <div className="bg-slate-100 p-1 rounded-xl flex mb-4">
                                 <button
                                     onClick={() => {
                                         setReportType('daily');
                                         setFilters(prev => ({ ...prev, start_date: today, end_date: today }));
                                     }}
-                                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'daily'
+                                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'daily'
                                         ? 'bg-white text-violet-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
                                         }`}
@@ -128,7 +147,7 @@ export default function ReportsPage() {
                                 </button>
                                 <button
                                     onClick={() => setReportType('tasks')}
-                                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'tasks'
+                                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${reportType === 'tasks'
                                         ? 'bg-white text-violet-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
                                         }`}
@@ -138,67 +157,69 @@ export default function ReportsPage() {
                             </div>
 
                             {/* Filters Interface */}
-                            <div className="space-y-5">
+                            <div className="space-y-3">
                                 {reportType === 'daily' ? (
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Date</label>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Select Date</label>
                                         <input
                                             type="date"
                                             value={filters.start_date}
                                             onChange={(e) => setFilters({ ...filters, start_date: e.target.value, end_date: e.target.value })}
-                                            className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
                                             style={{ minWidth: '140px' }}
                                         />
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Start Date</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
                                             <input
                                                 type="date"
                                                 value={filters.start_date}
                                                 onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
-                                                className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
                                                 style={{ minWidth: '140px' }}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">End Date</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Date</label>
                                             <input
                                                 type="date"
                                                 value={filters.end_date}
                                                 onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
-                                                className="w-full px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm text-slate-700"
                                                 style={{ minWidth: '140px' }}
                                             />
                                         </div>
                                     </div>
                                 )}
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Employee</label>
-                                    <select
-                                        value={filters.employee_id}
-                                        onChange={(e) => setFilters({ ...filters, employee_id: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
-                                    >
-                                        <option value="">All Employees</option>
-                                        {employees
-                                            .filter(emp => !filters.project_id || tasks.some(t => t.project_id === Number(filters.project_id) && t.assigned_to === emp.employee_id))
-                                            .map(emp => (
-                                                <option key={emp.employee_id} value={emp.employee_id}>
-                                                    {emp.first_name} {emp.last_name}
-                                                </option>
-                                            ))}
-                                    </select>
-                                </div>
+                                {isAdmin && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Employee</label>
+                                        <select
+                                            value={filters.employee_id}
+                                            onChange={(e) => setFilters({ ...filters, employee_id: e.target.value })}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
+                                        >
+                                            <option value="">All Employees</option>
+                                            {employees
+                                                .filter(emp => !filters.project_id || tasks.some(t => t.project_id === Number(filters.project_id) && t.assigned_to === emp.employee_id))
+                                                .map(emp => (
+                                                    <option key={emp.employee_id} value={emp.employee_id}>
+                                                        {emp.first_name} {emp.last_name}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Project</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Project</label>
                                     <select
                                         value={filters.project_id}
                                         onChange={(e) => setFilters({ ...filters, project_id: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
                                     >
                                         <option value="">All Projects</option>
                                         {projects.map(proj => (
@@ -208,11 +229,11 @@ export default function ReportsPage() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
                                     <select
                                         value={filters.status}
                                         onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700"
                                     >
                                         {TASK_STATUSES.map(status => (
                                             <option key={status.value} value={status.value}>{status.label}</option>
@@ -221,11 +242,11 @@ export default function ReportsPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-8">
+                            <div className="mt-4">
                                 <button
                                     onClick={handleGenerateReport}
                                     disabled={loading}
-                                    className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-violet-500/20 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-violet-500/20 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {loading ? (
                                         <><LoadingSpinner /> Processing...</>
@@ -320,6 +341,7 @@ export default function ReportsPage() {
                                             type={reportType}
                                             data={reportData}
                                             filters={filters}
+                                            employeeName={selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}` : undefined}
                                         />
                                     </div>
                                 </div>
