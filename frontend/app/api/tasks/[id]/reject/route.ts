@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -18,7 +16,8 @@ export async function POST(
             );
         }
 
-        const taskId = parseInt(params.id);
+        const resolvedParams = await params;
+        const taskId = parseInt(resolvedParams.id);
         if (isNaN(taskId)) {
             return NextResponse.json(
                 { success: false, message: 'Invalid task ID' },
@@ -27,11 +26,10 @@ export async function POST(
         }
 
         // Get the task to find the creator
-        const task = await prisma.task.findUnique({
-            where: { task_id: taskId },
+        const task = await prisma.tasks.findUnique({
+            where: { task_id: BigInt(taskId) },
             include: {
-                employee: true,
-                created_by_user: true
+                employee: true
             }
         });
 
@@ -44,45 +42,54 @@ export async function POST(
 
         // Verify the current user is the assigned employee
         const currentEmployeeId = session.user.employee_id;
-        if (task.employee_id !== currentEmployeeId) {
+        if (task.employee_id && Number(task.employee_id) !== Number(currentEmployeeId)) {
             return NextResponse.json(
                 { success: false, message: 'You are not assigned to this task' },
                 { status: 403 }
             );
         }
 
-        // Update task assignment status or handle rejection logic
-        // For now, we'll just keep the task as-is but create a notification
-
         // Create notification for the task creator
         if (task.created_by) {
             const rejectorName = session.user.name || 'User';
 
-            await prisma.notification.create({
-                data: {
-                    user_id: task.created_by,
-                    type: 'task_rejected',
-                    data: JSON.stringify({
-                        title: 'Task Assignment Declined',
-                        message: `${rejectorName} declined the task "${task.task_name}"`,
-                        task_id: task.task_id,
-                        task_name: task.task_name,
-                        task_code: task.task_code,
-                        rejected_by: rejectorName,
-                        link: `/tasks/${task.task_id}/details`
-                    })
-                }
+            // Get the creator user ID from the users table based on employee_id
+            const creatorUser = await prisma.users.findFirst({
+                where: { employee_id: Number(task.created_by) }
             });
+
+            if (creatorUser) {
+                // Create notification in the notifications table format (uses UUID)
+                const notificationId = crypto.randomUUID();
+                await prisma.notifications.create({
+                    data: {
+                        id: notificationId,
+                        type: 'task_rejected',
+                        notifiable_type: 'App\\Models\\User',
+                        notifiable_id: BigInt(creatorUser.id),
+                        data: JSON.stringify({
+                            title: 'Task Assignment Declined',
+                            message: `${rejectorName} declined the task "${task.task_name}"`,
+                            task_id: taskId,
+                            task_name: task.task_name,
+                            task_code: task.task_code,
+                            rejected_by: rejectorName,
+                            link: `/tasks/${taskId}/details`
+                        })
+                    }
+                });
+            }
         }
 
         // Log activity
-        await prisma.activityLog.create({
+        await prisma.activity_log.create({
             data: {
-                user_id: session.user.id,
+                user_id: parseInt(session.user.id),
                 action: 'reject_task',
-                entity_type: 'task',
-                entity_id: taskId,
-                details: `Rejected task assignment: ${task.task_name}`
+                name: 'System',
+                module: 'Tasks',
+                description: `Rejected task assignment: ${task.task_name}`,
+                created_at: new Date()
             }
         });
 
@@ -102,7 +109,5 @@ export async function POST(
             },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }
